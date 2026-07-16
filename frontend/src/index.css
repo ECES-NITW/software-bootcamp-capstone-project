@@ -1,0 +1,86 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #333;
+  background: #f2f2f2;
+}
+
+/* Navbar - small bar fixed at the top */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #d9d9d9;
+  border-bottom: 1px solid #bbb;
+  z-index: 10;
+}
+
+.navLogo {
+  font-weight: bold;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.navRight {
+  display: flex;
+  gap: 8px;
+}
+
+.navRight button {
+  padding: 6px 12px;
+  background: #ececec;
+  color: #333;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.navRight button:hover {
+  background: #e0e0e0;
+}
+
+/* Offset everything below the fixed navbar (works whether or not
+   there's an appBody wrapper - e.g. the home page renders bare) */
+.appShell {
+  padding-top: 48px;
+}
+
+.appBody {
+  display: flex;
+  min-height: calc(100vh - 48px);
+}
+
+/* Sidebar - left column */
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: #e6e6e6;
+  border-right: 1px solid #bbb;
+  padding: 16px;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Main content area (the Outlet) */
+.appMain {
+  flex: 1;
+  padding: 16px;
+  background: #f2f2f2;
+}
