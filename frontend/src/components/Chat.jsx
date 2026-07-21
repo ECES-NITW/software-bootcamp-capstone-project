@@ -1,38 +1,85 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { useMessages } from "../hooks/useChat";
+import { useQueryClient } from "@tanstack/react-query";
+import { socket } from "../App";
+import useUser from "../hooks/useUser";
 
-const socket = io(import.meta.env.VITE_API_URL);
-
-const Chat = () => {
-    const [messages, setMessages] = useState([]);
+const Chat = ({ conversationId }) => {
+    const queryClient = useQueryClient();
+    const { data: user } = useUser();
+    const {
+        data: messages,
+        isLoading,
+        isFetching,
+        isError,
+    } = useMessages(conversationId);
     const [msgInput, setMsgInput] = useState("");
+    const [isConnected, setIsConnected] = useState(socket.connected);
+
     useEffect(() => {
-        const handleResponse = (data) => {
-            const role = data.sender===socket.id ? "user" : "other"
-            setMessages((prev) => [...prev, { message: data.message , sender:role}]);
+      //Joining the room
+        socket.emit("join_room", conversationId);
+        
+        const handleConnect = () => {
+            console.log("Connected:", socket.id);
+            setIsConnected(true);
+            queryClient.invalidateQueries({
+                queryKey: ["chat_messages", conversationId],
+            });
         };
+        
+        const handleResponse = (data) => {
+            queryClient.setQueryData(
+                ["chat_messages", conversationId],
+                (prev = []) => [...prev, data],
+            );
+        };
+        //Listening to Connections (reserved keyword)
+        socket.on("connect", handleConnect);
+        //Listening to responses
         socket.on("response", handleResponse);
+
         return () => {
+            socket.off("connect", handleConnect);
             socket.off("response", handleResponse);
         };
-    }, []);
+    }, [conversationId, queryClient]);
 
     const sendMessage = (e) => {
         e.preventDefault();
-        socket.emit("message", msgInput);
+        const newMessage = {
+            msgId:crypto.randomUUID(),
+            conversationId,
+            message: msgInput,
+            sender: user?.user_id,
+        };
+        socket.emit("message", newMessage);
+        queryClient.setQueryData(
+            ["chat_messages", conversationId],
+            (prev = []) => [...prev, newMessage],
+        );
         setMsgInput("");
     };
 
+    let status = "Connected";
+    if (isError) status = "Error";
+    else if (isLoading) status = "Loading...";
+    else if (isFetching) status = "Fetching...";
+    else if (!isConnected) status = "Connecting...";
+
     return (
         <div>
-            <div>{messages.map((msg) => {
-              if (msg.sender=="user"){
-                return(<div>{"user:" + msg.message}</div>)
-              }else{
-                return(<div>{"other:" + msg.message}</div>)
-              }
-            })}</div>
-            <form onSubmit={(e) => sendMessage(e)}>
+            <div>
+                {messages?.map((msg, i) => {
+                    const isMe = msg.sender === user?.user_id;
+                    return (
+                        <div key={msg.id ?? i}>
+                            {(isMe ? "user:" : "other:") + msg.message}
+                        </div>
+                    );
+                })}
+            </div>
+            <form onSubmit={sendMessage}>
                 <input
                     value={msgInput}
                     onChange={(e) => {
@@ -42,6 +89,7 @@ const Chat = () => {
                 />
                 <button type="submit">Send Message</button>
             </form>
+            <p>{status}</p>
         </div>
     );
 };
