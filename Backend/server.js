@@ -8,6 +8,8 @@ dotenv.config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const authRoutes = require("./routes/authRoutes");
+const chatRouter = require("./routes/chatRouter");
 
 const connectDB = require("./config/Database");
 
@@ -18,6 +20,9 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+
+app.use("/api/auth", authRoutes);
+app.use("/chat", chatRouter);
 
 app.get("/", (req, res) => {
     res.send("Campus Marketplace Backend is Running!!");

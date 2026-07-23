@@ -1,3 +1,5 @@
+const { addMessage: sendMessage } = require("./controllers/chatController");
+
 function openChat(io) {
     io.on("connection", (socket) => {
         console.log("A user connected!");
@@ -7,16 +9,23 @@ function openChat(io) {
             socket.join(convo_id)
         })
 
-        socket.on("message", (data) => {
+        socket.on("message", async (data) => {
             console.log(data);
-
-            
-
-            io.to(data.conversationId).emit("response", {
-                id:data.msgId,
-                message:data.message,
-                sender:socket.sender
-            });
+            try{
+                await sendMessage(data)
+                io.to(data.conversationId).emit("response", {
+                    id:data.msgId,
+                    message:data.message,
+                    sender:socket.sender
+                });
+            }catch{
+                io.to(data.conversationId).emit("response", {
+                    id:data.msgId,
+                    message:data.message,
+                    sender:socket.sender,
+                    status:"error"
+                });
+            }
 
         });
 

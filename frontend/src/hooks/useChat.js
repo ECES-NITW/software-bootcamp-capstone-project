@@ -1,6 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
+// Fetches (or creates) the conversation for a given product, along with its
+// messages. productId is sent as a path parameter, sellerId as a query parameter.
+export const useProductConversation = (productId, sellerId) => {
+    return useQuery({
+        queryKey: ["chat_conversation", productId, sellerId],
+        queryFn: async () => {
+            const response = await api.get(
+                `/chat/conversation/${productId}?sellerId=${sellerId}`
+            );
+            return response.data;
+        },
+        enabled: Boolean(productId && sellerId),
+    });
+};
+
 export const useConversations = () => {
     return useQuery({
         queryKey: ["chat_conversations"],

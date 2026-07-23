@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../App";
 import useUser from "../hooks/useUser";
 
-const Chat = ({ conversationId }) => {
+const Chat = ({ productId }) => {
     const queryClient = useQueryClient();
     const { data: user } = useUser();
     const {
@@ -18,13 +18,13 @@ const Chat = ({ conversationId }) => {
 
     useEffect(() => {
       //Joining the room
-        socket.emit("join_room", conversationId);
+        socket.emit("join_room", productId);
         
         const handleConnect = () => {
             console.log("Connected:", socket.id);
             setIsConnected(true);
             queryClient.invalidateQueries({
-                queryKey: ["chat_messages", conversationId],
+                queryKey: ["chat_messages", productId],
             });
         };
         
@@ -34,9 +34,9 @@ const Chat = ({ conversationId }) => {
                 (prev = []) => [...prev, data],
             );
         };
-        //Listening to Connections (reserved keyword)
+        //Listening to Connections (reserved keyword) - Used for network reconnections
         socket.on("connect", handleConnect);
-        //Listening to responses
+        //Listening to responses - for new messages
         socket.on("response", handleResponse);
 
         return () => {
