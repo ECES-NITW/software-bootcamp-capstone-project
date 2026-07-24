@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
+import {queryClient} from "../main"
 
 function LoginPage() {
     const navigate = useNavigate();
@@ -22,12 +23,7 @@ function LoginPage() {
             const res = await api.post(`/auth/login`, { email, password });
             const data = res.data;
 
-            if (!res.ok) {
-                setError(data.message || "Login failed.");
-                return;
-            }
-
-            localStorage.setItem("marketplace_token", data.token);
+            localStorage.setItem("access_token", data.token);
 
             navigate("/feed");
         } catch (err) {

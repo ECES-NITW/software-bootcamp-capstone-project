@@ -24,7 +24,7 @@ function RegisterPage() {
 
         setLoading(true);
         try {
-            await api.post(`/auth/register`, { name, email, password });
+            await api.post(`/auth/register`, { userName: name, email, password });
             navigate("/login");
         } catch (err) {
             setError(err.response?.data?.message || "Could not reach the server.");

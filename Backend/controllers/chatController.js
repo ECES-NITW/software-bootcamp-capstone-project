@@ -37,17 +37,12 @@ const getProductConversation = async (req, res) => {
 };
 
 const addMessage = async (messageData) => {
-    try{
-        await Message.create({
-            msgId:messageData.msgId,
-            conversationId:messageData.conversationId,
-            sender:messageData.sender,
-            message:messageData.message
-        })
-    }
-    catch(error){
-        throw error
-    }
+    await Message.create({
+        msgId:messageData.msgId,
+        conversationId:messageData.conversationId,
+        sender:messageData.sender,
+        message:messageData.message
+    })
 };
 
 module.exports = { getProductConversation, addMessage };

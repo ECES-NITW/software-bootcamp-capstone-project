@@ -12,7 +12,9 @@ function openChat(io) {
         socket.on("message", async (data) => {
             console.log(data);
             try{
+                //Saving the message to database
                 await sendMessage(data)
+
                 io.to(data.conversationId).emit("response", {
                     id:data.msgId,
                     message:data.message,
