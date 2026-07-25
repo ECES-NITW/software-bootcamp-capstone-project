@@ -29,7 +29,7 @@ function ChatPage() {
                 <div className="chatSidebar">
                     <div className="chatListHeader">Conversations</div>
 
-                    {isConvsLoading ? (
+                    {isLoading ? (
                         <p
                             style={{
                                 padding: "16px",
@@ -38,6 +38,16 @@ function ChatPage() {
                             }}
                         >
                             Loading conversations...
+                        </p>
+                    ) : isError ? (
+                        <p
+                            style={{
+                                padding: "16px",
+                                color: "var(--text-muted)",
+                                fontSize: "0.88rem",
+                            }}
+                        >
+                            Could not load conversations.
                         </p>
                     ) : conversations?.length === 0 ? (
                         <p
@@ -55,15 +65,15 @@ function ChatPage() {
                                 <div
                                     key={conv._id}
                                     className={`chatItem ${selectedConvId === conv._id ? "active" : ""}`}
-                                    onClick={() => setSelectedConvId(conv.id)}
+                                    onClick={() => setSelectedConvId(conv._id)}
                                 >
                                     <div
                                         className="navAvatar"
                                         style={{ flexShrink: 0 }}
                                     >
-                                        {conv.contactName
+                                        {(conv.contactName ?? "Te")
                                             .substring(0, 2)
-                                            .toUpperCase() ?? "TE"}
+                                            .toUpperCase()}
                                     </div>
                                     <div className="chatItemInfo">
                                         <div className="chatItemName">

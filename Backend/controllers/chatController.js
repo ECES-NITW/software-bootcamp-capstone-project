@@ -43,6 +43,25 @@ const getMessages = async (req, res) => {
             });
         }
 
+        // Only a participant (buyer or seller) may read the thread.
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) {
+            return res.status(404).json({
+                success: false,
+                message: "Conversation not found",
+            });
+        }
+        const uid = req.user.id;
+        if (
+            String(conversation.buyerId) !== uid &&
+            String(conversation.sellerId) !== uid
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "Not a participant of this conversation",
+            });
+        }
+
         const messages = await Message.find({ conversationId }).sort({
             createdAt: 1,
         });
@@ -73,10 +92,12 @@ const addMessage = async (messageData) => {
 const getConversations = async (req, res) => {
     const userId = req.user.id;
     try {
-        const found = await Conversation.find({
+        const chats = await Conversation.find({
             $or: [{ buyerId: userId }, { sellerId: userId }],
-        }).sort({ updatedAt: -1 });
-        const conversations = found.map((c) =>
+        })
+            .sort({ updatedAt: -1 })
+            .lean();
+        const conversations = chats.map((c) =>
             String(c.sellerId) === userId
                 ? { ...c, role: "seller" }
                 : { ...c, role: "buyer" },

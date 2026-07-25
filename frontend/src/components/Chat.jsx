@@ -22,6 +22,7 @@ const Chat = ({ conversationId }) => {
 
     useEffect(() => {
         if (!conversationId) return;
+        if (!socket.connected) socket.connect();
 
         const joinRoom = () => socket.emit("join_room", conversationId);
         joinRoom();
@@ -31,13 +32,18 @@ const Chat = ({ conversationId }) => {
             joinRoom();
         };
         const handleDisconnect = () => setIsConnected(false);
-        const handleResponse = (data) => addMessage(data);
+        const handleResponse = (data) => {
+            if (data.conversationId && data.conversationId !== conversationId)
+                return;
+            addMessage(data);
+        };
 
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
         socket.on("response", handleResponse);
 
         return () => {
+            socket.emit("leave_room", conversationId);
             socket.off("connect", handleConnect);
             socket.off("disconnect", handleDisconnect);
             socket.off("response", handleResponse);

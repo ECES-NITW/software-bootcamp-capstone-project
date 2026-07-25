@@ -912,6 +912,34 @@ h1, h2, h3, .navLogo {
   background: var(--bg-card);
 }
 
+/* Connection status line (e.g. "Connecting...") shown below the composer */
+.chatStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 24px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  background: var(--bg-card);
+}
+
+.chatStatus::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d9a441;
+  animation: chatStatusPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes chatStatusPulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
 /* Typing indicator */
 .typingIndicator {
   display: flex;

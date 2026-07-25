@@ -1,15 +1,13 @@
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import useUser from '../hooks/useUser'
+import { logout } from '../functions/auth'
 
 function Navbar() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { data: user } = useUser()
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token')
-    queryClient.removeQueries({ queryKey: ['user'] })
+    logout()
     navigate('/login')
   }
 

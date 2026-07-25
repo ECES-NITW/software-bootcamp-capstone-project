@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import api from "../api/api";
 
 // Fetches (or lazily creates) the conversation for a given product and returns
@@ -41,26 +41,3 @@ export const useMessages = (conversationId) => {
     });
 };
 
-export const useSendMessages = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async ({ id, convoId, sender, message }) => {
-            const response = await api.post("/chat/messages", {
-                id,
-                convoId,
-                sender,
-                message,
-            });
-            return response.data;
-        },
-
-        onSuccess: (_data, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["chat_conversations"] });
-            if (variables.convoId) {
-                queryClient.invalidateQueries({
-                    queryKey: ["chat_messages", variables.convoId],
-                });
-            }
-        },
-    });
-};

@@ -17,8 +17,5 @@ router.put(
     upload.single("profilePic"),
     handleUpdateProfile,
 );
-router.get("/me", authMiddleware, (req, res) => {
-    return res.status(201).json({ user: req.user });
-});
 
 module.exports = router;

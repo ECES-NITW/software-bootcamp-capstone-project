@@ -1,5 +1,5 @@
 import axios from "axios";
-import { queryClient } from "../main";
+import { logout } from "../functions/auth";
 
 const api = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}`,//Importing Backend URL from .env file
@@ -14,17 +14,18 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// On an unauthorized response, clear the token and the cached user so the app
-// treats the session as logged out. We do NOT redirect here - ProtectedRoute
-// renders its own "login required" state once the user query is gone.
-// queryClient is imported lazily-in-use (inside the callback) so the circular
-// import with main.jsx resolves at runtime.
+
+// Only log out on an auth/JWT 401 - identified by the message the auth
+// middleware sends. Keep this string in sync with AUTH_401_MESSAGE in
+// Backend/middlewares/authMiddleware.js. Other 401s are left to the caller.
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem("access_token");
-            queryClient.removeQueries({ queryKey: ["user"] });
+        if (
+            error.response?.status === 401 &&
+            error.response?.data?.message === "Session expired, please log in again"
+        ) {
+            logout();
         }
         return Promise.reject(error);
     },

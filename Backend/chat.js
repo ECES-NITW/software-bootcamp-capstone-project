@@ -1,46 +1,81 @@
+const jwt = require("jsonwebtoken");
+const Conversation = require("./models/Conversation");
 const { addMessage: sendMessage } = require("./controllers/chatController");
 
-function openChat(io) {
-    io.on("connection", (socket) => {
-        console.log("A user connected!");
-        console.log(socket.id);
+// True if userId is the buyer or seller on the conversation.
+const isParticipant = (conversation, userId) =>
+    conversation &&
+    (String(conversation.buyerId) === userId ||
+        String(conversation.sellerId) === userId);
 
-        socket.on("join_room",(convo_id) => {
-            socket.join(convo_id)
-        })
+function openChat(io) {
+    // Authenticate every socket via the JWT passed in the handshake. Verified
+    // once here; socket.userId is then trusted for the connection's lifetime, so
+    // the client can never spoof the sender.
+    io.use((socket, next) => {
+        try {
+            const token = socket.handshake.auth?.token;
+            if (!token) return next(new Error("Authentication required"));
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            socket.userId = decoded.id;
+            next();
+        } catch {
+            next(new Error("Invalid or expired token"));
+        }
+    });
+
+    io.on("connection", (socket) => {
+        // Join a conversation room only if the user is a participant.
+        socket.on("join_room", async (convo_id) => {
+            try {
+                const conversation = await Conversation.findById(convo_id);
+                if (isParticipant(conversation, socket.userId)) {
+                    socket.join(convo_id);
+                }
+            } catch (err) {
+                console.error("join_room failed", err);
+            }
+        });
+
+        socket.on("leave_room", (convo_id) => {
+            socket.leave(convo_id);
+        });
 
         socket.on("message", async (data) => {
-            console.log(data);
-            try{
-                //Saving the message to database
-                await sendMessage(data)
+            try {
+                // Verify the user is a participant, then persist with the
+                // server-derived sender (never the client-supplied one).
+                const conversation = await Conversation.findById(
+                    data.conversationId,
+                );
+                if (!isParticipant(conversation, socket.userId)) {
+                    throw new Error("Not a participant");
+                }
+
+                await sendMessage({ ...data, sender: socket.userId });
 
                 // Broadcast to the OTHER participants only - the sender already
-                // has the message optimistically in its cache, so echoing it back
-                // would create a duplicate (the client does no deduping).
-                // NOTE: sender is taken from the payload for now; step 8 will
-                // derive it from the authenticated socket instead of trusting the client.
+                // has the message optimistically in its cache.
                 socket.to(data.conversationId).emit("response", {
-                    id:data.msgId,
-                    message:data.message,
-                    sender:data.sender
+                    id: data.msgId,
+                    conversationId: data.conversationId,
+                    message: data.message,
+                    sender: socket.userId,
                 });
-            }catch(err){
+            } catch (err) {
                 console.error("Failed to persist message", err);
-                // Notify only the sender that their message failed, not the room.
+                // Notify only the sender that their message failed.
                 socket.emit("response", {
-                    id:data.msgId,
-                    message:data.message,
-                    sender:data.sender,
-                    status:"error"
+                    id: data.msgId,
+                    conversationId: data.conversationId,
+                    message: data.message,
+                    sender: socket.userId,
+                    status: "error",
                 });
             }
-
         });
 
-        socket.on("disconnect", () => {
-            console.log("Disconnected", socket.id);
-        });
+        socket.on("disconnect", () => {});
     });
 }
 

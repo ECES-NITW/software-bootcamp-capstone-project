@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
-const cloudinary = require("cloudinary");
+const cloudinary = require("../config/cloudinary");
 
 const register = async (req, res) => {
   try {
@@ -145,13 +145,18 @@ const handleUpdateProfile = async (req, res) => {
       imageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-    user.userName = userName;
+    if (userName) user.userName = userName;
     user.profilePic = imageUrl;
     await user.save();
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({
