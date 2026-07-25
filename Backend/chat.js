@@ -15,16 +15,23 @@ function openChat(io) {
                 //Saving the message to database
                 await sendMessage(data)
 
-                io.to(data.conversationId).emit("response", {
+                // Broadcast to the OTHER participants only - the sender already
+                // has the message optimistically in its cache, so echoing it back
+                // would create a duplicate (the client does no deduping).
+                // NOTE: sender is taken from the payload for now; step 8 will
+                // derive it from the authenticated socket instead of trusting the client.
+                socket.to(data.conversationId).emit("response", {
                     id:data.msgId,
                     message:data.message,
-                    sender:socket.sender
+                    sender:data.sender
                 });
-            }catch{
-                io.to(data.conversationId).emit("response", {
+            }catch(err){
+                console.error("Failed to persist message", err);
+                // Notify only the sender that their message failed, not the room.
+                socket.emit("response", {
                     id:data.msgId,
                     message:data.message,
-                    sender:socket.sender,
+                    sender:data.sender,
                     status:"error"
                 });
             }

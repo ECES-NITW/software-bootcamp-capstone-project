@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRentExchangeDetail } from '../hooks/useRentExchange';
 import { useItemComments, useAddComment } from '../hooks/useComments';
-import { useSendMessage } from '../hooks/useChat';
+import Chat from '../components/Chat';
 import useUser from '../hooks/useUser';
 
 function ItemDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [commentText, setCommentText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [activeReplyId, setActiveReplyId] = useState(null);
+  const [showChat, setShowChat] = useState(false);
 
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
@@ -20,7 +21,6 @@ function ItemDetailPage() {
   const { data: comments, isLoading: isCommentsLoading } = useItemComments(id);
   
   const addCommentMutation = useAddComment(id);
-  const startChatMutation = useSendMessage();
 
   const handlePostComment = (e) => {
     e.preventDefault();
@@ -47,19 +47,9 @@ function ItemDetailPage() {
 
   const handleStartNegotiation = () => {
     if (!item) return;
-    
-    const initialText = item.type === 'rent'
-      ? `Hi ${item.seller}! I'm interested in renting your "${item.title}". Is it available?`
-      : `Hi ${item.seller}! I'd like to trade for your "${item.title}". I have items matching your swap preferences!`;
-
-    startChatMutation.mutate({
-      text: initialText,
-      contactName: item.seller
-    }, {
-      onSuccess: () => {
-        navigate('/chat');
-      }
-    });
+    // Open the inline chat panel for this product. The conversation is
+    // created/loaded by <Chat> via useProductConversation.
+    setShowChat(true);
   };
 
   if (isLoading) {
@@ -172,6 +162,17 @@ function ItemDetailPage() {
         </div>
 
       </div>
+
+      {showChat && item && (
+        <section className="chatSection" style={{ marginTop: '32px' }}>
+          <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.4rem', fontWeight: 700, marginBottom: '16px' }}>
+            💬 Chat with {item.seller}
+          </h2>
+          <div className="chatContainer" style={{ minHeight: '360px' }}>
+            <Chat productId={id} sellerId={item.sellerId} />
+          </div>
+        </section>
+      )}
 
       <section className="commentsSection">
         <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.4rem', fontWeight: 700, marginBottom: '20px' }}>

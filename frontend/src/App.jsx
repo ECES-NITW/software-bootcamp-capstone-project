@@ -10,6 +10,7 @@ import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
 import RestrictedPage from './pages/RestrictedPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import { io } from "socket.io-client";
 
 const router = createBrowserRouter([
@@ -19,13 +20,19 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'feed', element: <FeedPage /> },
-      { path: 'rent-item', element: <RentItemPage /> },
-      { path: 'exchange-item', element: <ExchangeItemPage /> },
       { path: 'item/:id', element: <ItemDetailPage /> },
-      { path: 'checkout/:id', element: <CheckoutPage /> },
-      { path: 'chat', element: <ChatPage /> },
       { path: 'buy-items', element: <RestrictedPage featureName="Buy Items" /> },
-      { path: 'sell-items', element: <RestrictedPage featureName="Sell Items" /> }
+      { path: 'sell-items', element: <RestrictedPage featureName="Sell Items" /> },
+      // Routes below require an authorized session.
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: 'rent-item', element: <RentItemPage /> },
+          { path: 'exchange-item', element: <ExchangeItemPage /> },
+          { path: 'checkout/:id', element: <CheckoutPage /> },
+          { path: 'chat', element: <ChatPage /> },
+        ],
+      },
     ],
   },
   { path: '/login', element: <LoginPage /> },

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { queryClient } from "../main";
 
 const api = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}`,//Importing Backend URL from .env file
@@ -13,10 +14,21 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-//you can add a response interceptor as well so you can log the user out
-//whenever the backend returns unauthorized error
-// These work for all the fetching/query calls you'll be using
-//Just import api wherever you want to use it
+// On an unauthorized response, clear the token and the cached user so the app
+// treats the session as logged out. We do NOT redirect here - ProtectedRoute
+// renders its own "login required" state once the user query is gone.
+// queryClient is imported lazily-in-use (inside the callback) so the circular
+// import with main.jsx resolves at runtime.
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem("access_token");
+            queryClient.removeQueries({ queryKey: ["user"] });
+        }
+        return Promise.reject(error);
+    },
+);
 
 export default api
 

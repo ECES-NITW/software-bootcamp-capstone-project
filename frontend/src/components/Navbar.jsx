@@ -1,15 +1,33 @@
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import useUser from '../hooks/useUser'
 
-
-function Navbar({user}) {
+function Navbar() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { data: user } = useUser()
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    queryClient.removeQueries({ queryKey: ['user'] })
+    navigate('/login')
+  }
 
   return (
     <header className="navbar">
       <button className="navLogo" onClick={() => navigate('/')}>Campus Marketplace</button>
       <div className="navRight">
-        <button onClick={() => navigate('/login')}>Login</button>
-        <button onClick={() => navigate('/register')}>Register</button>
+        {user ? (
+          <>
+            <span className="navUser">{user.userName}</span>
+            <button onClick={handleLogout}>Logout</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => navigate('/login')}>Login</button>
+            <button onClick={() => navigate('/register')}>Register</button>
+          </>
+        )}
       </div>
     </header>
   )

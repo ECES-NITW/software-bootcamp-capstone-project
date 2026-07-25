@@ -31,7 +31,12 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -82,12 +87,6 @@ const login = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      user: {
-        id: user._id,
-        Username: user.userName,
-        email: user.email,
-        profilePic: user.profilePic,
-      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -110,7 +109,12 @@ const handleGetProfile = async (req, res) => {
     }
     return res.status(200).json({
       success: true,
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({

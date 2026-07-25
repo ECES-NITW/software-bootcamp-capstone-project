@@ -17,7 +17,7 @@ function RootLayout() {
         //If its home page , no sidebar
         return (
             <div className="appShell">
-                <Navbar user={null} />
+                <Navbar />
                 <div className="appBody">
                     <main className="appMain">
                         <HomePage />

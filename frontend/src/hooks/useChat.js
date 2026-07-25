@@ -1,18 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
-// Fetches (or creates) the conversation for a given product, along with its
-// messages. productId is sent as a path parameter, sellerId as a query parameter.
-export const useProductConversation = (productId, sellerId) => {
+// Fetches (or lazily creates) the conversation for a given product and returns
+// its metadata (conversationId, lastMessage, ...). Only productId is sent - the
+// seller is derived from the product server-side.
+export const useProductConversation = (productId) => {
     return useQuery({
-        queryKey: ["chat_conversation", productId, sellerId],
+        queryKey: ["chat_conversation", productId],
         queryFn: async () => {
-            const response = await api.get(
-                `/chat/conversation/${productId}?sellerId=${sellerId}`
-            );
+            const response = await api.get(`/chat/conversation/${productId}`);
             return response.data;
         },
-        enabled: Boolean(productId && sellerId),
+        enabled: Boolean(productId),
     });
 };
 
@@ -23,10 +22,12 @@ export const useConversations = () => {
             const response = await api.get("/chat/conversations");
             return response.data;
         },
-        refetchInterval: 3000,
     });
 };
 
+// Messages for a conversation. Only runs once a conversationId exists. No
+// polling - live updates arrive over the socket and are written into this same
+// cache; the query just provides the DB-authoritative baseline on load/refetch.
 export const useMessages = (conversationId) => {
     return useQuery({
         queryKey: ["chat_messages", conversationId],
@@ -36,8 +37,7 @@ export const useMessages = (conversationId) => {
             );
             return response.data;
         },
-        enabled: Boolean(conversationId),   
-        refetchInterval: 1500,
+        enabled: Boolean(conversationId),
     });
 };
 

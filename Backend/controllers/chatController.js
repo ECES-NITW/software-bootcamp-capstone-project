@@ -5,28 +5,25 @@ const getProductConversation = async (req, res) => {
     try {
         const userId = req.user.id;
         const productId = req.params.productId;
-        const sellerId = req.query.sellerId;
+        //TODO: Get the product details here , mainly the sellerID
+        //Don't Continue if the user id is the sellerID
 
         let conversation = await Conversation.findOne({
             productId,
             buyerId: userId,
         });
-        //Creating a Conversation
         if (!conversation) {
             conversation = await Conversation.create({
                 productId,
                 buyerId: userId,
-                sellerId,
             });
         }
 
-        const messages = await Message.find({
-            conversationId: conversation._id,
-        }).sort({ createdAt: 1 });
-
         return res.status(200).json({
             conversationId: conversation._id,
-            messages,
+            lastMessage: conversation.lastMessage,
+            buyerId: conversation.buyerId,
+            sellerId: conversation.sellerId,
         });
     } catch (error) {
         return res.status(500).json({
@@ -36,14 +33,70 @@ const getProductConversation = async (req, res) => {
     }
 };
 
-const addMessage = async (messageData) => {
-    await Message.create({
-        msgId:messageData.msgId,
-        conversationId:messageData.conversationId,
-        sender:messageData.sender,
-        message:messageData.message
-    })
+const getMessages = async (req, res) => {
+    try {
+        const { conversationId } = req.query;
+        if (!conversationId) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId is required",
+            });
+        }
+
+        const messages = await Message.find({ conversationId }).sort({
+            createdAt: 1,
+        });
+
+        return res.status(200).json(messages);
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };
 
-module.exports = { getProductConversation, addMessage };
+const addMessage = async (messageData) => {
+    const conversationId = messageData.conversationId;
+    const message = messageData.message;
+    await Message.create({
+        msgId: messageData.msgId,
+        conversationId,
+        sender: messageData.sender,
+        message,
+    });
+    await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: message,
+    });
+};
 
+const getConversations = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const found = await Conversation.find({
+            $or: [{ buyerId: userId }, { sellerId: userId }],
+        }).sort({ updatedAt: -1 });
+        const conversations = found.map((c) =>
+            String(c.sellerId) === userId
+                ? { ...c, role: "seller" }
+                : { ...c, role: "buyer" },
+        );
+        return res.status(200).json({
+            success: true,
+            conversations,
+            conversation_count: conversations.length,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
+
+module.exports = {
+    getProductConversation,
+    getMessages,
+    addMessage,
+    getConversations,
+};

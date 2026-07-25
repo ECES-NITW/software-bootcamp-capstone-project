@@ -1,96 +1,107 @@
-import { useEffect, useState } from "react";
-import { useMessages } from "../hooks/useChat";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../App";
 import useUser from "../hooks/useUser";
+import { useMessages } from "../hooks/useChat";
 
-const Chat = ({ productId }) => {
+const Chat = ({ conversationId }) => {
     const queryClient = useQueryClient();
     const { data: user } = useUser();
-    const {
-        data: messages,
-        isLoading,
-        isFetching,
-        isError,
-    } = useMessages(conversationId);
+    const { data: messages = [], isLoading } = useMessages(conversationId);
+
     const [msgInput, setMsgInput] = useState("");
     const [isConnected, setIsConnected] = useState(socket.connected);
+    const bottomRef = useRef(null);
+
+    const addMessage = (msg) => {
+        queryClient.setQueryData(
+            ["chat_messages", conversationId],
+            (prev = []) => [...prev, msg],
+        );
+    };
 
     useEffect(() => {
-      //Joining the room
-        socket.emit("join_room", productId);
-        
+        if (!conversationId) return;
+
+        const joinRoom = () => socket.emit("join_room", conversationId);
+        joinRoom();
+
         const handleConnect = () => {
-            console.log("Connected:", socket.id);
             setIsConnected(true);
-            queryClient.invalidateQueries({
-                queryKey: ["chat_messages", productId],
-            });
+            joinRoom();
         };
-        
-        const handleResponse = (data) => {
-            queryClient.setQueryData(
-                ["chat_messages", conversationId],
-                (prev = []) => [...prev, data],
-            );
-        };
-        //Listening to Connections (reserved keyword) - Used for network reconnections
+        const handleDisconnect = () => setIsConnected(false);
+        const handleResponse = (data) => addMessage(data);
+
         socket.on("connect", handleConnect);
-        //Listening to responses - for new messages
+        socket.on("disconnect", handleDisconnect);
         socket.on("response", handleResponse);
 
         return () => {
             socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
             socket.off("response", handleResponse);
         };
-    }, [conversationId, queryClient]);
+    }, [conversationId]);
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages.length]);
 
     const sendMessage = (e) => {
         e.preventDefault();
+        if (!msgInput.trim() || !conversationId) return;
+
         const newMessage = {
-            msgId:crypto.randomUUID(),
+            msgId: crypto.randomUUID(),
             conversationId,
             message: msgInput,
             sender: user?.user_id,
         };
         socket.emit("message", newMessage);
-        queryClient.setQueryData(
-            ["chat_messages", conversationId],
-            (prev = []) => [...prev, newMessage],
-        );
+        addMessage(newMessage);
         setMsgInput("");
     };
 
-    let status = "Connected";
-    if (isError) status = "Error";
-    else if (isLoading) status = "Loading...";
-    else if (isFetching) status = "Fetching...";
-    else if (!isConnected) status = "Connecting...";
-
     return (
-        <div>
-            <div>
-                {messages?.map((msg, i) => {
-                    const isMe = msg.sender === user?.user_id;
-                    return (
-                        <div key={msg.id ?? i}>
-                            {(isMe ? "user:" : "other:") + msg.message}
-                        </div>
-                    );
-                })}
+        <>
+            <div className="chatMessages">
+                {isLoading ? (
+                    <p style={{ color: "var(--text-muted)" }}>
+                        Loading message history...
+                    </p>
+                ) : (
+                    messages.map((msg, i) => {
+                        const isMe = msg.sender === user?.user_id;
+                        return (
+                            <div
+                                key={msg.msgId ?? msg.id ?? i}
+                                className={`chatBubble ${isMe ? "bubble-sent" : "bubble-received"}`}
+                            >
+                                {msg.message}
+                            </div>
+                        );
+                    })
+                )}
+                <div ref={bottomRef} />
             </div>
-            <form onSubmit={sendMessage}>
+
+            <form className="chatInputArea" onSubmit={sendMessage}>
                 <input
+                    className="formInput"
                     value={msgInput}
-                    onChange={(e) => {
-                        setMsgInput(e.target.value);
-                    }}
+                    onChange={(e) => setMsgInput(e.target.value)}
+                    placeholder="Type a message..."
+                    style={{ flex: 1 }}
                     required
                 />
-                <button type="submit">Send Message</button>
+                <button type="submit" className="btn btn-primary" style={{ padding: "0 20px" }}>
+                    Send
+                </button>
             </form>
-            <p>{status}</p>
-        </div>
+
+            {!isConnected && <p className="chatStatus">Connecting...</p>}
+        </>
     );
 };
 

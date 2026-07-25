@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
-import {queryClient} from "../main"
 
 function LoginPage() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -24,6 +25,9 @@ function LoginPage() {
             const data = res.data;
 
             localStorage.setItem("access_token", data.token);
+            // Token now exists, so useUser's `enabled` gate flips on. Invalidate
+            // so it refetches the profile fresh instead of a stale disabled state.
+            await queryClient.invalidateQueries({ queryKey: ["user"] });
 
             navigate("/feed");
         } catch (err) {
