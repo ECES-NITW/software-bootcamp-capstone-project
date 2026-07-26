@@ -7,8 +7,6 @@ const getProductConversation = async (req, res) => {
         const userId = req.user.id;
         const productId = req.params.productId;
 
-        // Resolve the seller from the product (findById returns a doc; take the
-        // seller ObjectId off it).
         const product = await Product.findById(productId).select("seller");
         if (!product) {
             return res.status(404).json({
@@ -18,8 +16,6 @@ const getProductConversation = async (req, res) => {
         }
         const sellerId = product.seller;
 
-        // A seller can't open a conversation on their own product. Compare as
-        // strings (userId is a string, sellerId is an ObjectId).
         if (String(sellerId) === userId) {
             return res.status(400).json({
                 success: false,
@@ -122,18 +118,21 @@ const getConversations = async (req, res) => {
         .sort({ updatedAt: -1 })
         .lean();
 
-        const conversations = chats.map(chat => ({
-            ...chat,
+        const conversations = chats
+            .filter((chat) => chat.buyerId && chat.sellerId && chat.productId)
+            .map(chat => ({
+                ...chat,
 
-            buyer: chat.buyerId,
-            seller: chat.sellerId,
-            product: chat.productId,
-            buyerId: chat.buyerId._id,
-            sellerId: chat.sellerId._id,
-            productId: chat.productId._id,
+                buyer: chat.buyerId,
+                seller: chat.sellerId,
+                product: chat.productId,
 
-            role: chat.buyerId._id.equals(userId) ? "buyer" : "seller"
-        }));
+                buyerId: chat.buyerId._id,
+                sellerId: chat.sellerId._id,
+                productId: chat.productId._id,
+
+                role: chat.buyerId._id.equals(userId) ? "buyer" : "seller"
+            }));
         return res.status(200).json({
             success: true,
             conversations,

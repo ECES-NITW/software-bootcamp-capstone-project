@@ -18,6 +18,17 @@ const Chat = ({ conversationId }) => {
             ["chat_messages", conversationId],
             (prev = []) => [...prev, msg],
         );
+        queryClient.setQueryData(["chat_conversations"], (prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                conversations: prev.conversations.map((conv) => {
+                    if (conv._id === conversationId) {
+                        return { ...conv, lastMessage: msg.message };
+                    } else return conv;
+                }),
+            };
+        });
     };
 
     useEffect(() => {
@@ -101,7 +112,11 @@ const Chat = ({ conversationId }) => {
                     style={{ flex: 1 }}
                     required
                 />
-                <button type="submit" className="btn btn-primary" style={{ padding: "0 20px" }}>
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ padding: "0 20px" }}
+                >
                     Send
                 </button>
             </form>

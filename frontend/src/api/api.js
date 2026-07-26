@@ -15,9 +15,6 @@ api.interceptors.request.use((config) => {
 });
 
 
-// Only log out on an auth/JWT 401 - identified by the message the auth
-// middleware sends. Keep this string in sync with AUTH_401_MESSAGE in
-// Backend/middlewares/authMiddleware.js. Other 401s are left to the caller.
 api.interceptors.response.use(
     (response) => response,
     (error) => {

@@ -1,29 +1,28 @@
 import { useState } from "react";
 import { useConversations } from "../hooks/useChat";
 import Chat from "../components/Chat";
-
-// The other participant, from the current user's perspective. When I'm the buyer
-// the other party is the seller, and vice-versa.
-const otherPartyOf = (conv) =>
-    conv.role === "buyer" ? conv.seller : conv.buyer;
+import { useQueryClient } from "@tanstack/react-query";
 
 function ChatPage() {
     const { data: conversationsData, isLoading, isError } = useConversations();
     const conversations = conversationsData?.conversations;
+    const queryClient = useQueryClient()
 
-    // A user can be a buyer in some chats and a seller in others; this toggles
-    // which side of their inbox is shown. Defaults to the buyer side.
     const [view, setView] = useState("buyer");
     const [selectedConvId, setSelectedConvId] = useState(null);
 
     const switchView = (next) => {
         setView(next);
-        setSelectedConvId(null); // the selected chat may not exist in the other tab
+        setSelectedConvId(null);
+        queryClient.invalidateQueries({queryKey:["chat_conversations"]})
     };
+
+    const getContactInfo = (conv) =>
+        conv.role === "buyer" ? conv.seller : conv.buyer;
 
     const shown = conversations?.filter((c) => c.role === view) ?? [];
     const activeConv = conversations?.find((c) => c._id === selectedConvId);
-    const activeOther = activeConv && otherPartyOf(activeConv);
+    const activeOther = activeConv && getContactInfo(activeConv);
     const activeProduct = activeConv?.product;
 
     return (
@@ -101,48 +100,60 @@ function ChatPage() {
                                 fontSize: "0.88rem",
                             }}
                         >
-                            No {view === "buyer" ? "buying" : "selling"} conversations
-                            yet.
+                            No {view === "buyer" ? "buying" : "selling"}{" "}
+                            conversations yet.
                         </p>
                     ) : (
                         <div className="chatList">
                             {shown.map((conv) => {
-                                const other = otherPartyOf(conv);
+                                const other = getContactInfo(conv);
                                 const name = other?.userName ?? "User";
                                 const product = conv.product;
                                 return (
                                     <div
                                         key={conv._id}
                                         className={`chatItem ${selectedConvId === conv._id ? "active" : ""}`}
-                                        onClick={() => setSelectedConvId(conv._id)}
+                                        onClick={() =>
+                                            setSelectedConvId(conv._id)
+                                        }
                                     >
                                         {other?.profilePic ? (
                                             <img
                                                 src={other.profilePic}
                                                 alt={name}
                                                 className="navAvatar"
-                                                style={{ flexShrink: 0, objectFit: "cover" }}
+                                                style={{
+                                                    flexShrink: 0,
+                                                    objectFit: "cover",
+                                                }}
                                             />
                                         ) : (
                                             <div
                                                 className="navAvatar"
                                                 style={{ flexShrink: 0 }}
                                             >
-                                                {name.substring(0, 2).toUpperCase()}
+                                                {name
+                                                    .substring(0, 2)
+                                                    .toUpperCase()}
                                             </div>
                                         )}
                                         <div className="chatItemInfo">
-                                            <div className="chatItemName">{name}</div>
+                                            <div className="chatItemName">
+                                                {name}
+                                            </div>
                                             {product?.title && (
                                                 <div
                                                     className="chatItemMessage"
-                                                    style={{ color: "var(--primary)" }}
+                                                    style={{
+                                                        color: "var(--primary)",
+                                                    }}
                                                 >
                                                     {product.title}
                                                 </div>
                                             )}
                                             <div className="chatItemMessage">
-                                                {conv.lastMessage || "No messages yet"}
+                                                {conv.lastMessage ||
+                                                    "No messages yet"}
                                             </div>
                                         </div>
                                     </div>
@@ -171,7 +182,12 @@ function ChatPage() {
                                     </div>
                                 )}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>
+                                    <h3
+                                        style={{
+                                            fontSize: "1rem",
+                                            fontWeight: 700,
+                                        }}
+                                    >
                                         {activeOther?.userName ?? "User"}
                                     </h3>
                                     {activeProduct?.title && (

@@ -6,7 +6,6 @@ import useUser, { useProfile } from '../hooks/useUser';
 import useMediaQuery from '../hooks/useMediaQuery';
 import ProductChatWrapper from '../components/ProductChatWrapper';
 
-// Placeholder - Product has no rating field/endpoint yet.
 const RATING_PLACEHOLDER = 4.5;
 
 function ItemDetailPage() {
@@ -28,9 +27,10 @@ function ItemDetailPage() {
   const { data: contactInfo } = useProfile(sellerId);
   const { data: comments, isLoading: isCommentsLoading } = useItemComments(id);
 
+  const isOwnProduct = Boolean(user && sellerId && String(sellerId) === String(user.user_id));
+
   const addCommentMutation = useAddComment(id);
 
-  // Opened straight into chat from a feed card: sync from router navigation state.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (location.state?.showChat) setShowChat(true);
@@ -78,6 +78,8 @@ function ItemDetailPage() {
   const image = item.images?.[0]?.url;
   const sellerName = contactInfo?.userName ?? "Seller";
 
+  const chatOpen = showChat && !isOwnProduct;
+
   const chatPanel = (
     <ProductChatWrapper
       productId={id}
@@ -119,7 +121,7 @@ function ItemDetailPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                <div>Seller: <strong style={{ color: 'var(--text-main)' }}>{sellerName}</strong></div>
+                <div>Seller: <strong style={{ color: 'var(--text-main)' }}>{isOwnProduct ? 'You' : sellerName}</strong></div>
                 <div>Rating: <span style={{ color: '#b58d63' }}>★ {RATING_PLACEHOLDER}</span></div>
                 {item.location && <div>📍 {item.location}</div>}
               </div>
@@ -140,13 +142,15 @@ function ItemDetailPage() {
                     <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate(`/checkout/${item._id}`)}>
                       🔒 Secure Checkout
                     </button>
-                    <button
-                      className="btn"
-                      style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
-                      onClick={() => setShowChat(true)}
-                    >
-                      💬 Chat
-                    </button>
+                    {!isOwnProduct && (
+                      <button
+                        className="btn"
+                        style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
+                        onClick={() => setShowChat(true)}
+                      >
+                        💬 Chat
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
@@ -250,14 +254,14 @@ function ItemDetailPage() {
 
         </div>
 
-        {showChat && isDesktop && (
+        {chatOpen && isDesktop && (
           <aside className="detailChatSide">
             {chatPanel}
           </aside>
         )}
       </div>
 
-      {showChat && !isDesktop && (
+      {chatOpen && !isDesktop && (
         <div className="detailChatOverlay">
           {chatPanel}
         </div>

@@ -999,7 +999,6 @@ h1, h2, h3, .navLogo {
   color: var(--text-main);
 }
 
-/* Connection status line (e.g. "Connecting...") shown below the composer */
 .chatStatus {
   display: flex;
   align-items: center;

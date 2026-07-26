@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
-// Product list. Fetches /products and applies light client-side
-// search/category/sort. NOTE: the `type` (rent/exchange) filter and the "rating"
-// sort have no Product-model equivalent yet, so they are no-ops (placeholder UI).
 export const useProducts = (filters = {}) => {
     const { category, type, search, sort } = filters;
     return useQuery({
@@ -37,7 +34,6 @@ export const useProducts = (filters = {}) => {
     });
 };
 
-// Single product by id. Returns the product document (seller populated).
 export const useProduct = (productId) => {
     return useQuery({
         queryKey: ["product", productId],
@@ -49,7 +45,6 @@ export const useProduct = (productId) => {
     });
 };
 
-// Create a product. Expects multipart FormData (images + fields).
 export const useCreateProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -63,7 +58,6 @@ export const useCreateProduct = () => {
     });
 };
 
-// Update a product. Expects { id, formData } (multipart FormData).
 export const useUpdateProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({

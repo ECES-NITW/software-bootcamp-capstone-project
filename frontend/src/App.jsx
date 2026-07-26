@@ -9,7 +9,8 @@ import ExchangeItemPage from './pages/ExchangeItemPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
-import RestrictedPage from './pages/RestrictedPage';
+import BuyPage from './pages/BuyPage';
+import PostItemsPage from './pages/PostItemsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { io } from "socket.io-client";
 
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'feed', element: <FeedPage /> },
       { path: 'item/:id', element: <ItemDetailPage /> },
+      { path: 'buy-items', element: <BuyPage /> },
       {
         element: <ProtectedRoute />,
         children: [
@@ -28,8 +30,7 @@ const router = createBrowserRouter([
           { path: 'exchange-item', element: <ExchangeItemPage /> },
           { path: 'checkout/:id', element: <CheckoutPage /> },
           { path: 'chat', element: <ChatPage /> },
-          { path: 'buy-items', element: <RestrictedPage featureName="Buy Items" /> },
-          { path: 'sell-items', element: <RestrictedPage featureName="Sell Items" /> },
+          { path: 'sell-items', element: <PostItemsPage /> },
         ],
       },
     ],
@@ -38,8 +39,6 @@ const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
 ]);
 
-// auth is a function so the access token is read on every re-connection attempt.
-// Invalid Tokens are rejected by socket in backend
 export const socket = io(import.meta.env.VITE_API_URL, {
   autoConnect: false,
   auth: (cb) => cb({ token: localStorage.getItem("access_token") }),

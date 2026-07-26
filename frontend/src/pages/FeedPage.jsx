@@ -19,6 +19,12 @@ function FeedPage() {
     sort
   });
 
+  const visibleItems = user
+    ? items?.filter(
+        (p) => String(p.seller?._id ?? p.seller) !== String(user.user_id),
+      )
+    : items;
+
   const categories = ["All", "Electronics", "Books", "Furniture", "Clothing", "Sports", "Accessories", "Stationery", "Others"];
 
   return (
@@ -133,13 +139,13 @@ function FeedPage() {
         <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed #ef4444' }}>
           <p style={{ color: '#fca5a5' }}>Failed to retrieve listings from the API.</p>
         </div>
-      ) : items?.length === 0 ? (
+      ) : visibleItems?.length === 0 ? (
         <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed var(--border-color)' }}>
           <p style={{ color: 'var(--text-muted)' }}>No items found matching your filters.</p>
         </div>
       ) : (
         <div className="grid">
-          {items?.map(product => (
+          {visibleItems?.map(product => (
             <ItemCard key={product._id} product={product} />
           ))}
         </div>

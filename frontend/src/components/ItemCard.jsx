@@ -1,11 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
-// Placeholder - Product has no rating field/endpoint yet.
 const RATING_PLACEHOLDER = 4.5;
 
-// A single product tile for the feed. Clicking the card opens the detail page;
-// the small chat button opens the detail page straight into chat via router
-// state ({ showChat: true }).
 const ItemCard = ({ product }) => {
     const navigate = useNavigate();
     const image = product.images?.[0]?.url;

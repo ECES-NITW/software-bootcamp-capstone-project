@@ -1,12 +1,6 @@
 import { useProductConversation } from "../hooks/useChat";
 import Chat from "./Chat";
 
-// Chat panel for the item-detail flow. It is only rendered inside
-// ItemDetailPage, which already has the product + seller contact info, so those
-// come in as props (productInfo, contactInfo) instead of re-querying here. This
-// wrapper only resolves/creates the conversation for the product and renders the
-// top bar (seller + product) above <Chat>. Mounting it is what creates the
-// conversation, so it should only mount once the buyer actually opens chat.
 const ProductChatWrapper = ({ productId, productInfo, contactInfo, onClose }) => {
     const { data: conversation, isLoading, isError } =
         useProductConversation(productId);

@@ -9,9 +9,6 @@ const isParticipant = (conversation, userId) =>
         String(conversation.sellerId) === userId);
 
 function openChat(io) {
-    // Authenticate every socket via the JWT passed in the handshake. Verified
-    // once here; socket.userId is then trusted for the connection's lifetime, so
-    // the client can never spoof the sender.
     io.use((socket, next) => {
         try {
             const token = socket.handshake.auth?.token;
@@ -43,8 +40,6 @@ function openChat(io) {
 
         socket.on("message", async (data) => {
             try {
-                // Verify the user is a participant, then persist with the
-                // server-derived sender (never the client-supplied one).
                 const conversation = await Conversation.findById(
                     data.conversationId,
                 );
@@ -54,8 +49,6 @@ function openChat(io) {
 
                 await sendMessage({ ...data, sender: socket.userId });
 
-                // Broadcast to the OTHER participants only - the sender already
-                // has the message optimistically in its cache.
                 socket.to(data.conversationId).emit("response", {
                     id: data.msgId,
                     conversationId: data.conversationId,
