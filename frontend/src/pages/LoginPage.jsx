@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
-const API_URL = 
+import api from "../api/api";
 
 function LoginPage() {
     const navigate = useNavigate();
@@ -20,13 +19,8 @@ function LoginPage() {
 
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await res.json();
+            const res = await api.post(`/auth/login`, { email, password });
+            const data = res.data;
 
             if (!res.ok) {
                 setError(data.message || "Login failed.");
@@ -34,11 +28,6 @@ function LoginPage() {
             }
 
             localStorage.setItem("marketplace_token", data.token);
-            localStorage.setItem("marketplace_user", JSON.stringify({
-                _id: data._id,
-                name: data.name,
-                email: data.email
-            }));
 
             navigate("/feed");
         } catch (err) {
