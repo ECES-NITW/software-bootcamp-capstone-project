@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import api from '../api/api'
 
 function PostItemPage() {
   const navigate = useNavigate()
@@ -20,29 +19,19 @@ function PostItemPage() {
       return
     }
 
-    const token = localStorage.getItem('marketplace_token')
-
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/items`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ title, description, price: Number(price), category, type: 'buy' })
+      const res = await api.post('/items', {
+        title,
+        description,
+        price: Number(price),
+        category,
+        type: 'buy'
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.message || 'Failed to post item.')
-        return
-      }
-
-      navigate(`/item/${data.id}`)
+      navigate(`/item/${res.data.id}`)
     } catch (err) {
-      setError('Could not reach the server.')
+      setError(err.response?.data?.message || 'Failed to post item.')
       console.error(err)
     } finally {
       setLoading(false)
