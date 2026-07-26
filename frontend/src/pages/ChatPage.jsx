@@ -2,10 +2,29 @@ import { useState } from "react";
 import { useConversations } from "../hooks/useChat";
 import Chat from "../components/Chat";
 
+// The other participant, from the current user's perspective. When I'm the buyer
+// the other party is the seller, and vice-versa.
+const otherPartyOf = (conv) =>
+    conv.role === "buyer" ? conv.seller : conv.buyer;
+
 function ChatPage() {
     const { data: conversationsData, isLoading, isError } = useConversations();
     const conversations = conversationsData?.conversations;
+
+    // A user can be a buyer in some chats and a seller in others; this toggles
+    // which side of their inbox is shown. Defaults to the buyer side.
+    const [view, setView] = useState("buyer");
     const [selectedConvId, setSelectedConvId] = useState(null);
+
+    const switchView = (next) => {
+        setView(next);
+        setSelectedConvId(null); // the selected chat may not exist in the other tab
+    };
+
+    const shown = conversations?.filter((c) => c.role === view) ?? [];
+    const activeConv = conversations?.find((c) => c._id === selectedConvId);
+    const activeOther = activeConv && otherPartyOf(activeConv);
+    const activeProduct = activeConv?.product;
 
     return (
         <div style={{ animation: "fadeInUp 0.4s ease-out" }}>
@@ -29,6 +48,31 @@ function ChatPage() {
                 <div className="chatSidebar">
                     <div className="chatListHeader">Conversations</div>
 
+                    <div
+                        style={{
+                            display: "flex",
+                            background: "var(--bg-input)",
+                            padding: "4px",
+                            borderRadius: "12px",
+                            margin: "12px 16px",
+                        }}
+                    >
+                        <button
+                            className={`toggleTab ${view === "buyer" ? "active-rent" : ""}`}
+                            style={{ flex: 1, padding: "8px 0" }}
+                            onClick={() => switchView("buyer")}
+                        >
+                            🛍️ Buying
+                        </button>
+                        <button
+                            className={`toggleTab ${view === "seller" ? "active-rent" : ""}`}
+                            style={{ flex: 1, padding: "8px 0" }}
+                            onClick={() => switchView("seller")}
+                        >
+                            🏷️ Selling
+                        </button>
+                    </div>
+
                     {isLoading ? (
                         <p
                             style={{
@@ -49,7 +93,7 @@ function ChatPage() {
                         >
                             Could not load conversations.
                         </p>
-                    ) : conversations?.length === 0 ? (
+                    ) : shown.length === 0 ? (
                         <p
                             style={{
                                 padding: "16px",
@@ -57,41 +101,108 @@ function ChatPage() {
                                 fontSize: "0.88rem",
                             }}
                         >
-                            No conversations started yet.
+                            No {view === "buyer" ? "buying" : "selling"} conversations
+                            yet.
                         </p>
                     ) : (
                         <div className="chatList">
-                            {conversations?.map((conv) => (
-                                <div
-                                    key={conv._id}
-                                    className={`chatItem ${selectedConvId === conv._id ? "active" : ""}`}
-                                    onClick={() => setSelectedConvId(conv._id)}
-                                >
+                            {shown.map((conv) => {
+                                const other = otherPartyOf(conv);
+                                const name = other?.userName ?? "User";
+                                const product = conv.product;
+                                return (
                                     <div
-                                        className="navAvatar"
-                                        style={{ flexShrink: 0 }}
+                                        key={conv._id}
+                                        className={`chatItem ${selectedConvId === conv._id ? "active" : ""}`}
+                                        onClick={() => setSelectedConvId(conv._id)}
                                     >
-                                        {(conv.contactName ?? "Te")
-                                            .substring(0, 2)
-                                            .toUpperCase()}
-                                    </div>
-                                    <div className="chatItemInfo">
-                                        <div className="chatItemName">
-                                            {conv.contactName ?? "Test"}
+                                        {other?.profilePic ? (
+                                            <img
+                                                src={other.profilePic}
+                                                alt={name}
+                                                className="navAvatar"
+                                                style={{ flexShrink: 0, objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="navAvatar"
+                                                style={{ flexShrink: 0 }}
+                                            >
+                                                {name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div className="chatItemInfo">
+                                            <div className="chatItemName">{name}</div>
+                                            {product?.title && (
+                                                <div
+                                                    className="chatItemMessage"
+                                                    style={{ color: "var(--primary)" }}
+                                                >
+                                                    {product.title}
+                                                </div>
+                                            )}
+                                            <div className="chatItemMessage">
+                                                {conv.lastMessage || "No messages yet"}
+                                            </div>
                                         </div>
-                                        <div className="chatItemMessage">
-                                            {(conv.lastMessage ?? "LastMessage...").substring(0,30)}
-                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
 
                 <div className="chatMain">
-                    {selectedConvId ? (
-                        <Chat conversationId={selectedConvId}/>
+                    {selectedConvId && activeConv ? (
+                        <>
+                            <div className="chatHeader">
+                                {activeOther?.profilePic ? (
+                                    <img
+                                        src={activeOther.profilePic}
+                                        alt={activeOther.userName}
+                                        className="navAvatar"
+                                        style={{ objectFit: "cover" }}
+                                    />
+                                ) : (
+                                    <div className="navAvatar">
+                                        {(activeOther?.userName ?? "User")
+                                            .substring(0, 2)
+                                            .toUpperCase()}
+                                    </div>
+                                )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>
+                                        {activeOther?.userName ?? "User"}
+                                    </h3>
+                                    {activeProduct?.title && (
+                                        <span
+                                            style={{
+                                                color: "var(--text-muted)",
+                                                fontSize: "0.72rem",
+                                            }}
+                                        >
+                                            {activeProduct.title}
+                                            {activeProduct.price != null
+                                                ? ` · $${activeProduct.price}`
+                                                : ""}
+                                        </span>
+                                    )}
+                                </div>
+                                {activeProduct?.images?.[0]?.url && (
+                                    <img
+                                        src={activeProduct.images[0].url}
+                                        alt={activeProduct.title}
+                                        style={{
+                                            width: 34,
+                                            height: 34,
+                                            borderRadius: 8,
+                                            objectFit: "cover",
+                                        }}
+                                    />
+                                )}
+                            </div>
+                            <Chat conversationId={selectedConvId} />
+                        </>
                     ) : (
                         <div
                             style={{

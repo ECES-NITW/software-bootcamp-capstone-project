@@ -1,6 +1,6 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const Product = require("../models/Product")
+const Product = require("../models/Product");
 
 const getProductConversation = async (req, res) => {
     try {
@@ -111,17 +111,29 @@ const addMessage = async (messageData) => {
 
 const getConversations = async (req, res) => {
     const userId = req.user.id;
+
     try {
         const chats = await Conversation.find({
-            $or: [{ buyerId: userId }, { sellerId: userId }],
+            $or: [{ buyerId: userId }, { sellerId: userId }]
         })
-            .sort({ updatedAt: -1 })
-            .lean();
-        const conversations = chats.map((c) =>
-            String(c.sellerId) === userId
-                ? { ...c, role: "seller" }
-                : { ...c, role: "buyer" },
-        );
+        .populate("buyerId", "userName profilePic")
+        .populate("sellerId", "userName profilePic")
+        .populate("productId")
+        .sort({ updatedAt: -1 })
+        .lean();
+
+        const conversations = chats.map(chat => ({
+            ...chat,
+
+            buyer: chat.buyerId,
+            seller: chat.sellerId,
+            product: chat.productId,
+            buyerId: chat.buyerId._id,
+            sellerId: chat.sellerId._id,
+            productId: chat.productId._id,
+
+            role: chat.buyerId._id.equals(userId) ? "buyer" : "seller"
+        }));
         return res.status(200).json({
             success: true,
             conversations,

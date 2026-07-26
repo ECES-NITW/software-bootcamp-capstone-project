@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const conversationSchema = new mongoose.Schema(
     {
         productId: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Product",
             required: true,
         },
         buyerId: {
@@ -11,9 +12,6 @@ const conversationSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
-        // Derived from the product server-side (not client-supplied). Not
-        // required yet because the product -> seller lookup lands with the Item
-        // model in step 6; until then conversations are created without it.
         sellerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
