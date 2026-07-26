@@ -57,7 +57,7 @@ function RegisterPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@college.edu"
+                        placeholder="you@student.nitw.ac.in"
                     />
                 </label>
 
