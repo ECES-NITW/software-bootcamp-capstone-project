@@ -122,13 +122,13 @@ function ItemDetailPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>RENTAL RATE:</div>
                   <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    ${item.price}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>/week</span>
+                    ₹{item.price}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>/week</span>
                   </div>
                 </div>
                 {item.deposit && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '20px', color: 'var(--text-muted)' }}>
                     <span>Security Deposit (Refundable):</span>
-                    <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>${item.deposit}</span>
+                    <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>₹{item.deposit}</span>
                   </div>
                 )}
                 {isLoggedIn ? (

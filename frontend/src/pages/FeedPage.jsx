@@ -161,7 +161,7 @@ function FeedPage() {
                 <div className="cardFooter">
                   {item.type === 'rent' ? (
                     <div className="cardPrice">
-                      ${item.price}<span>/week</span>
+                      ₹{item.price}<span>/week</span>
                     </div>
                   ) : (
                     <div className="cardPrice" style={{ fontSize: '0.82rem', color: 'var(--accent-swap)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
