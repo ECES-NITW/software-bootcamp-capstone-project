@@ -1,8 +1,5 @@
 const jwt = require("jsonwebtoken");
 
-// Sent on every auth/JWT 401 so the frontend can tell a session failure (which
-// should log the user out) apart from an unrelated 401. Keep this string in sync
-// with the check in frontend/src/api/api.js.
 const AUTH_401_MESSAGE = "Session expired, please log in again";
 
 const authMiddleware = (req, res, next) => {

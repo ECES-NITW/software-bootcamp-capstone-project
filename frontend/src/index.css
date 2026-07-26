@@ -912,6 +912,93 @@ h1, h2, h3, .navLogo {
   background: var(--bg-card);
 }
 
+/* Small chat button on a feed ItemCard */
+.cardChatBtn {
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+.cardChatBtn:hover {
+  background: rgba(65, 90, 66, 0.06);
+  border-color: var(--primary);
+}
+
+/* Missing-image placeholders */
+.cardImagePlaceholder,
+.detailImagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  background: var(--bg-input);
+}
+
+/* Item detail: main column + optional desktop side chat */
+.detailLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.detailMainCol {
+  flex: 1;
+  min-width: 0;
+}
+.detailChatSide {
+  width: 380px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  height: 75vh;
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+}
+.detailChatSide .chatMain {
+  height: 100%;
+}
+
+/* Item detail: mobile full-screen chat overlay */
+.detailChatOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+}
+.detailChatOverlay .chatMain {
+  flex: 1;
+  height: 100%;
+}
+
+.chatCloseBtn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 8px;
+}
+.chatCloseBtn:hover {
+  color: var(--text-main);
+}
+
 /* Connection status line (e.g. "Connecting...") shown below the composer */
 .chatStatus {
   display: flex;

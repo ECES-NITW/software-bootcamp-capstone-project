@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCreateRentExchangeItem } from '../hooks/useRentExchange';
+import { useCreateProduct } from '../hooks/useProducts';
 
 function RentItemPage() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ function RentItemPage() {
   const [image, setImage] = useState("");
   const [dragActive, setDragActive] = useState(false);
 
-  const createItemMutation = useCreateRentExchangeItem();
+  const createItemMutation = useCreateProduct();
 
   const handleFile = (file) => {
     if (file && file.type.startsWith('image/')) {

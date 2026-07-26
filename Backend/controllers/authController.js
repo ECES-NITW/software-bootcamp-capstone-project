@@ -124,6 +124,33 @@ const handleGetProfile = async (req, res) => {
   }
 };
 
+const handleGetContactInfo = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("userName profilePic");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        profilePic: user.profilePic,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 const handleUpdateProfile = async (req, res) => {
   try {
     const { userName } = req.body;
@@ -169,5 +196,6 @@ module.exports = {
   register,
   login,
   handleGetProfile,
+  handleGetContactInfo,
   handleUpdateProfile,
 };

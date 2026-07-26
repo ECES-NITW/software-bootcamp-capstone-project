@@ -1,12 +1,31 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const Product = require("../models/Product")
 
 const getProductConversation = async (req, res) => {
     try {
         const userId = req.user.id;
         const productId = req.params.productId;
-        //TODO: Get the product details here , mainly the sellerID
-        //Don't Continue if the user id is the sellerID
+
+        // Resolve the seller from the product (findById returns a doc; take the
+        // seller ObjectId off it).
+        const product = await Product.findById(productId).select("seller");
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found",
+            });
+        }
+        const sellerId = product.seller;
+
+        // A seller can't open a conversation on their own product. Compare as
+        // strings (userId is a string, sellerId is an ObjectId).
+        if (String(sellerId) === userId) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot start a conversation on your own product",
+            });
+        }
 
         let conversation = await Conversation.findOne({
             productId,
@@ -16,6 +35,7 @@ const getProductConversation = async (req, res) => {
             conversation = await Conversation.create({
                 productId,
                 buyerId: userId,
+                sellerId,
             });
         }
 

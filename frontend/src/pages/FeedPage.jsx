@@ -1,27 +1,25 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useRentExchangeItems } from '../hooks/useRentExchange';
+import { useProducts } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
+import ItemCard from '../components/ItemCard';
 
 function FeedPage() {
-  const navigate = useNavigate();
-  
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [type, setType] = useState("all");
   const [sort, setSort] = useState("recent");
-  
+
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
 
-  const { data: items, isLoading, isError } = useRentExchangeItems({
+  const { data: items, isLoading, isError } = useProducts({
     category,
     type,
     search,
     sort
   });
 
-  const categories = ["All", "Textbooks", "Electronics", "Clothing", "Bicycle", "Others"];
+  const categories = ["All", "Electronics", "Books", "Furniture", "Clothing", "Sports", "Accessories", "Stationery", "Others"];
 
   return (
     <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
@@ -39,7 +37,7 @@ function FeedPage() {
         <div className="restrictedBanner" style={{ background: 'rgba(65, 90, 66, 0.05)', borderColor: 'rgba(65, 90, 66, 0.2)', color: '#3d5a45', marginBottom: '24px' }}>
           <span style={{ fontSize: '1.2rem' }}>🔑</span>
           <div>
-            <strong>Authorized Mode:</strong> Full features unlocked. You are logged in as <strong>{user?.username}</strong>.
+            <strong>Authorized Mode:</strong> Full features unlocked. You are logged in as <strong>{user?.userName}</strong>.
           </div>
         </div>
       )}
@@ -141,39 +139,8 @@ function FeedPage() {
         </div>
       ) : (
         <div className="grid">
-          {items?.map(item => (
-            <div 
-              key={item.id} 
-              className="productCard" 
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/item/${item.id}`)}
-            >
-              <div className="cardImageWrapper">
-                <img className="cardImage" src={item.image} alt={item.title} />
-                <span className={`cardBadge ${item.type === 'rent' ? 'badge-rent' : 'badge-swap'}`}>
-                  {item.type}
-                </span>
-              </div>
-              <div className="cardBody">
-                <span className="cardCategory">{item.category}</span>
-                <h3 className="cardTitle" title={item.title}>{item.title}</h3>
-                <p className="cardDesc">{item.description}</p>
-                <div className="cardFooter">
-                  {item.type === 'rent' ? (
-                    <div className="cardPrice">
-                      ${item.price}<span>/week</span>
-                    </div>
-                  ) : (
-                    <div className="cardPrice" style={{ fontSize: '0.82rem', color: 'var(--accent-swap)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🔁 Swap for: {item.preferences}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#b58d63' }}>
-                    ★ {item.rating}
-                  </div>
-                </div>
-              </div>
-            </div>
+          {items?.map(product => (
+            <ItemCard key={product._id} product={product} />
           ))}
         </div>
       )}

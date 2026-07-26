@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useRentExchangeDetail } from '../hooks/useRentExchange';
+import { useProduct } from '../hooks/useProducts';
 import { useProcessCheckout } from '../hooks/useCheckout';
 
 function CheckoutPage() {
@@ -14,7 +14,7 @@ function CheckoutPage() {
   const [cardCVV, setCardCVV] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const { data: item, isLoading, isError } = useRentExchangeDetail(id);
+  const { data: item, isLoading, isError } = useProduct(id);
   const checkoutMutation = useProcessCheckout();
 
   const rentPrice = item ? item.price : 0;
