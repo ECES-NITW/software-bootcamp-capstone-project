@@ -172,8 +172,10 @@ const handleUpdateProfile = async (req, res) => {
       imageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-    if (userName) user.userName = userName;
-    user.profilePic = imageUrl;
+    if (userName) {
+      user.userName = userName;
+      user.profilePic = imageUrl;
+    }
     await user.save();
     return res.status(200).json({
       success: true,
