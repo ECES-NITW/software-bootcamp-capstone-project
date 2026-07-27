@@ -133,8 +133,39 @@ function ItemDetailPage() {
 
               <div className="detailPriceSection">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>PRICE:</div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>${item.price}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>RENTAL RATE:</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    ₹{item.price}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>/week</span>
+                  </div>
+                </div>
+                {item.deposit && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '20px', color: 'var(--text-muted)' }}>
+                    <span>Security Deposit (Refundable):</span>
+                    <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>₹{item.deposit}</span>
+                  </div>
+                )}
+                {isLoggedIn ? (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => navigate(`/checkout/${item.id}`)}>
+                      🔒 Secure Rental Escrow
+                    </button>
+                    <button className="btn" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }} onClick={handleStartNegotiation}>
+                      💬 Chat
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
+                    ⚠️ Authorization required. Please log in or register to rent or chat.
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>TRADE PREFERENCES:</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-swap)' }}>
+                    🔁 Swap for: {item.preferences}
+                  </div>
                 </div>
 
                 {isLoggedIn ? (
