@@ -1,27 +1,31 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useRentExchangeItems } from '../hooks/useRentExchange';
+import { useProducts } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
+import ItemCard from '../components/ItemCard';
 
 function FeedPage() {
-  const navigate = useNavigate();
-  
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [type, setType] = useState("all");
   const [sort, setSort] = useState("recent");
-  
+
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
 
-  const { data: items, isLoading, isError } = useRentExchangeItems({
+  const { data: items, isLoading, isError } = useProducts({
     category,
     type,
     search,
     sort
   });
 
-  const categories = ["All", "Textbooks", "Electronics", "Clothing", "Bicycle", "Others"];
+  const visibleItems = user
+    ? items?.filter(
+        (p) => String(p.seller?._id ?? p.seller) !== String(user.user_id),
+      )
+    : items;
+
+  const categories = ["All", "Electronics", "Books", "Furniture", "Clothing", "Sports", "Accessories", "Stationery", "Others"];
 
   return (
     <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
@@ -39,7 +43,7 @@ function FeedPage() {
         <div className="restrictedBanner" style={{ background: 'rgba(65, 90, 66, 0.05)', borderColor: 'rgba(65, 90, 66, 0.2)', color: '#3d5a45', marginBottom: '24px' }}>
           <span style={{ fontSize: '1.2rem' }}>🔑</span>
           <div>
-            <strong>Authorized Mode:</strong> Full features unlocked. You are logged in as <strong>{user?.username}</strong>.
+            <strong>Authorized Mode:</strong> Full features unlocked. You are logged in as <strong>{user?.userName}</strong>.
           </div>
         </div>
       )}
@@ -135,7 +139,7 @@ function FeedPage() {
         <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed #ef4444' }}>
           <p style={{ color: '#fca5a5' }}>Failed to retrieve listings from the API.</p>
         </div>
-      ) : items?.length === 0 ? (
+      ) : visibleItems?.length === 0 ? (
         <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed var(--border-color)' }}>
           <p style={{ color: 'var(--text-muted)' }}>No items found matching your filters.</p>
         </div>

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logout } from "../functions/auth";
 
 const api = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}`,//Importing Backend URL from .env file
@@ -13,10 +14,19 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-//you can add a response interceptor as well so you can log the user out
-//whenever the backend returns unauthorized error
-// These work for all the fetching/query calls you'll be using
-//Just import api wherever you want to use it
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (
+            error.response?.status === 401 &&
+            error.response?.data?.message === "Session expired, please log in again"
+        ) {
+            logout();
+        }
+        return Promise.reject(error);
+    },
+);
 
 export default api
 

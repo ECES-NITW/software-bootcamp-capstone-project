@@ -9,7 +9,10 @@ import ExchangeItemPage from './pages/ExchangeItemPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
-import RestrictedPage from './pages/RestrictedPage';
+import BuyPage from './pages/BuyPage';
+import PostItemsPage from './pages/PostItemsPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import { io } from "socket.io-client";
 
 const router = createBrowserRouter([
   {
@@ -18,18 +21,28 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'feed', element: <FeedPage /> },
-      { path: 'rent-item', element: <RentItemPage /> },
-      { path: 'exchange-item', element: <ExchangeItemPage /> },
       { path: 'item/:id', element: <ItemDetailPage /> },
-      { path: 'checkout/:id', element: <CheckoutPage /> },
-      { path: 'chat', element: <ChatPage /> },
-      { path: 'buy-items', element: <RestrictedPage featureName="Buy Items" /> },
-      { path: 'sell-items', element: <RestrictedPage featureName="Sell Items" /> }
+      { path: 'buy-items', element: <BuyPage /> },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: 'rent-item', element: <RentItemPage /> },
+          { path: 'exchange-item', element: <ExchangeItemPage /> },
+          { path: 'checkout/:id', element: <CheckoutPage /> },
+          { path: 'chat', element: <ChatPage /> },
+          { path: 'sell-items', element: <PostItemsPage /> },
+        ],
+      },
     ],
   },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
 ]);
+
+export const socket = io(import.meta.env.VITE_API_URL, {
+  autoConnect: false,
+  auth: (cb) => cb({ token: localStorage.getItem("access_token") }),
+});
 
 function App() {
   return (

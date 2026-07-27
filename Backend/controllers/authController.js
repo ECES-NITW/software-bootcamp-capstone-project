@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
-const cloudinary = require("cloudinary");
+const cloudinary = require("../config/cloudinary");
 
 const register = async (req, res) => {
   try {
@@ -31,7 +31,12 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -82,12 +87,6 @@ const login = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      user: {
-        id: user._id,
-        Username: user.userName,
-        email: user.email,
-        profilePic: user.profilePic,
-      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -110,7 +109,39 @@ const handleGetProfile = async (req, res) => {
     }
     return res.status(200).json({
       success: true,
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const handleGetContactInfo = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("userName profilePic");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -141,13 +172,18 @@ const handleUpdateProfile = async (req, res) => {
       imageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-    user.userName = userName;
+    if (userName) user.userName = userName;
     user.profilePic = imageUrl;
     await user.save();
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user,
+      user: {
+        user_id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -160,5 +196,6 @@ module.exports = {
   register,
   login,
   handleGetProfile,
+  handleGetContactInfo,
   handleUpdateProfile,
 };

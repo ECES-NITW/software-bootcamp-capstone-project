@@ -1,12 +1,14 @@
 const jwt = require("jsonwebtoken");
 
+const AUTH_401_MESSAGE = "Session expired, please log in again";
+
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Access denied NO TOKEN provided",
+        message: AUTH_401_MESSAGE,
       });
     }
 
@@ -17,7 +19,7 @@ const authMiddleware = (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: "Invalid or exprired token(Login again)",
+      message: AUTH_401_MESSAGE,
     });
   }
 };
