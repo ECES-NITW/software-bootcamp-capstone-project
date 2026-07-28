@@ -32,7 +32,6 @@ function ItemDetailPage() {
   const addCommentMutation = useAddComment(id);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (location.state?.showChat) setShowChat(true);
   }, [location.state]);
 
