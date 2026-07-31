@@ -8,16 +8,19 @@ function RentItemPage() {
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Textbooks");
+  const [category, setCategory] = useState("Books");
+  const [condition, setCondition] = useState("Good");
   const [price, setPrice] = useState("");
   const [deposit, setDeposit] = useState("");
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
   const createItemMutation = useCreateProduct();
 
   const handleFile = (file) => {
     if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImage(e.target.result);
@@ -59,22 +62,27 @@ function RentItemPage() {
       return;
     }
 
-    const payload = {
-      title,
-      description,
-      category,
-      type: "rent",
-      price: parseFloat(price),
-      deposit: deposit ? parseFloat(deposit) : 0,
-      image: image || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=600"
-    };
+    if (!imageFile) {
+      alert("Please upload at least one item photograph.");
+      return;
+    }
 
-    createItemMutation.mutate(payload, {
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("condition", condition);
+    formData.append("type", "rent");
+    formData.append("price", Number(price));
+    formData.append("deposit", deposit ? Number(deposit) : 0);
+    formData.append("images", imageFile);
+
+    createItemMutation.mutate(formData, {
       onSuccess: () => {
         navigate('/feed');
       },
       onError: (err) => {
-        alert("Failed to publish listing: " + (err.message || err));
+        alert("Failed to publish listing: " + (err.response?.data?.message || err.message || err));
       }
     });
   };
@@ -123,16 +131,31 @@ function RentItemPage() {
             <div className="formGroup">
               <label className="formLabel">Category</label>
               <select className="formSelect" value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="Textbooks">Textbooks</option>
+                <option value="Books">Books</option>
                 <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
                 <option value="Clothing">Clothing</option>
-                <option value="Bicycle">Bicycle</option>
+                <option value="Sports">Sports</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Stationery">Stationery</option>
                 <option value="Others">Others</option>
               </select>
             </div>
-            
+
             <div className="formGroup">
-              <label className="formLabel">Rent Price per Week ($) *</label>
+              <label className="formLabel">Condition</label>
+              <select className="formSelect" value={condition} onChange={(e) => setCondition(e.target.value)}>
+                <option value="New">New</option>
+                <option value="Like New">Like New</option>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="formGroup">
+              <label className="formLabel">Rent Price per Week (₹) *</label>
               <input 
                 type="number" 
                 className="formInput" 
@@ -143,18 +166,18 @@ function RentItemPage() {
                 required
               />
             </div>
-          </div>
 
-          <div className="formGroup">
-            <label className="formLabel">Security Deposit ($) (Optional)</label>
-            <input 
-              type="number" 
-              className="formInput" 
-              placeholder="Refundable deposit amount" 
-              value={deposit} 
-              onChange={(e) => setDeposit(e.target.value)} 
-              min="0"
-            />
+            <div className="formGroup">
+              <label className="formLabel">Security Deposit (₹) (Optional)</label>
+              <input 
+                type="number" 
+                className="formInput" 
+                placeholder="Refundable deposit amount" 
+                value={deposit} 
+                onChange={(e) => setDeposit(e.target.value)} 
+                min="0"
+              />
+            </div>
           </div>
 
           <div className="formGroup">

@@ -180,26 +180,30 @@ function CheckoutPage() {
 
             <div style={{ marginTop: '16px', background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <span>Rental ({days} days @ ${(rentPrice/7).toFixed(2)}/day):</span>
-                <span style={{ color: 'var(--text-main)' }}>${((rentPrice / 7) * days).toFixed(2)}</span>
+                <span>Rental ({days} days @ ₹{(rentPrice/7).toFixed(2)}/day):</span>
+                <span style={{ color: 'var(--text-main)' }}>₹{((rentPrice / 7) * days).toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 <span>Refundable Deposit:</span>
-                <span style={{ color: 'var(--text-main)' }}>${depositPrice.toFixed(2)}</span>
+                <span style={{ color: 'var(--text-main)' }}>₹{depositPrice.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', borderTop: '1.5px solid var(--border-color)', paddingTop: '12px' }}>
                 <span>Total Escrow Amount:</span>
-                <span>${calculateTotal().toFixed(2)}</span>
+                <span>₹{calculateTotal().toFixed(2)}</span>
               </div>
+            </div>
+
+            <div style={{ background: '#fef3c7', border: '1px dashed #d97706', color: '#b45309', padding: '12px', borderRadius: '8px', fontSize: '0.88rem', textAlign: 'center', marginBottom: '8px' }}>
+              ℹ️ Checkout is in placeholder mode. Integration code will be added shortly.
             </div>
 
             <button 
               type="submit" 
               className="btn btn-primary" 
-              disabled={checkoutMutation.isPending}
-              style={{ width: '100%', marginTop: '12px' }}
+              disabled
+              style={{ width: '100%', marginTop: '12px', opacity: 0.7, cursor: 'not-allowed' }}
             >
-              {checkoutMutation.isPending ? 'Processing Escrow...' : '🔒 Confirmed: Fund Escrow'}
+              🔒 Fund Escrow (Placeholder)
             </button>
           </form>
 
