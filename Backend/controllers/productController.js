@@ -308,9 +308,16 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    // Delete all images from Cloudinary
-    for (const image of product.images) {
-      await cloudinary.uploader.destroy(image.public_id);
+    if (process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_KEY !== "YOUR_CLOUDINARY_API_KEY") {
+      try {
+        for (const image of product.images) {
+          if (image.public_id && !image.public_id.startsWith("local-")) {
+            await cloudinary.uploader.destroy(image.public_id);
+          }
+        }
+      } catch (err) {
+        console.error("Cloudinary destroy error:", err);
+      }
     }
 
     // Delete product from MongoDB

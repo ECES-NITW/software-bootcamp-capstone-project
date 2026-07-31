@@ -51,8 +51,8 @@ function Sidebar() {
         
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
 
-        <NavLink to="/buy-items" style={{ display: 'flex', alignItems: 'center' }}>
-          <PageIcon /> Buy
+        <NavLink to="/looking-for" style={{ display: 'flex', alignItems: 'center' }}>
+          <PageIcon /> Looking For
         </NavLink>
         <NavLink to="/rent-item" style={{ display: 'flex', alignItems: 'center' }}>
           <PageIcon /> Rent
@@ -67,9 +67,17 @@ function Sidebar() {
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
 
         {isLoggedIn && (
-          <NavLink to="/chat" style={{ display: 'flex', alignItems: 'center' }}>
-            <ChatIcon /> Messages
-          </NavLink>
+          <>
+            <NavLink to="/chat" style={{ display: 'flex', alignItems: 'center' }}>
+              <ChatIcon /> Messages
+            </NavLink>
+            <NavLink to="/orders" style={{ display: 'flex', alignItems: 'center' }}>
+              <PageIcon /> My Orders
+            </NavLink>
+            <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center' }}>
+              <PageIcon /> My Profile
+            </NavLink>
+          </>
         )}
       </nav>
     </aside>

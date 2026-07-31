@@ -1,15 +1,27 @@
-import { useState } from "react";
-import { useConversations } from "../hooks/useChat";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useConversations, useProductConversation } from "../hooks/useChat";
 import Chat from "../components/Chat";
 import { useQueryClient } from "@tanstack/react-query";
 
 function ChatPage() {
+    const location = useLocation();
+    const productId = location.state?.productId;
+    const { data: stateConversation } = useProductConversation(productId);
+
     const { data: conversationsData, isLoading, isError } = useConversations();
     const conversations = conversationsData?.conversations;
-    const queryClient = useQueryClient()
+    const queryClient = useQueryClient();
 
     const [view, setView] = useState("buyer");
     const [selectedConvId, setSelectedConvId] = useState(null);
+
+    useEffect(() => {
+        if (stateConversation?.conversationId) {
+            setView("buyer");
+            setSelectedConvId(stateConversation.conversationId);
+        }
+    }, [stateConversation]);
 
     const switchView = (next) => {
         setView(next);

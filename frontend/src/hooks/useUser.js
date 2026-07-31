@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
-// Used by ProtectedRoute and the Navbar to gate routes after authorization.
 const useUser = () => {
     const token = localStorage.getItem("access_token");
     return useQuery({
@@ -15,7 +14,6 @@ const useUser = () => {
     });
 };
 
-//Public Route for getting contactInfo
 export const useProfile = (userId) => {
     return useQuery({
         queryKey: ["profile", userId],
@@ -23,6 +21,23 @@ export const useProfile = (userId) => {
         queryFn: async () => {
             const response = await api.get(`/auth/profile/${userId}`);
             return response.data.user;
+        },
+    });
+};
+
+export const useUpdateUserProfile = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (formData) => {
+            const response = await api.put("/auth/profile", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            return response.data.user;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["user"] });
         },
     });
 };
