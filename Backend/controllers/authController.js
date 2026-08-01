@@ -6,15 +6,20 @@ const cloudinary = require("../config/cloudinary");
 
 const register = async (req, res) => {
   try {
-    const { userName, email, password } = req.body;
-    if (!userName || !email || !password) {
+    const { userName, email, phoneNumber, password } = req.body;
+    if (!userName || !email || !password || !phoneNumber) {
       return res.status(400).json({
         success: false,
         message: "Please fill all fields",
       });
     }
-
-    const existingUser = await User.findOne({ email });
+    if (!email.endsWith("@student.nitw.ac.in")) {
+      return res.status(400).json({
+        success: false,
+        message: "Only NIT Warangal email addresses are allowed.",
+      });
+    }
+    const existingUser = await User.findOne({ email, phoneNumber });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -25,6 +30,7 @@ const register = async (req, res) => {
     const user = await User.create({
       userName,
       email,
+      phoneNumber,
       password: hashedPassword,
     });
 
@@ -36,6 +42,7 @@ const register = async (req, res) => {
         userName: user.userName,
         email: user.email,
         profilePic: user.profilePic,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {
@@ -114,6 +121,7 @@ const handleGetProfile = async (req, res) => {
         userName: user.userName,
         email: user.email,
         profilePic: user.profilePic,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {
@@ -127,7 +135,9 @@ const handleGetProfile = async (req, res) => {
 const handleGetContactInfo = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select("userName profilePic");
+    const user = await User.findById(userId).select(
+      "userName profilePic phoneNumber",
+    );
 
     if (!user) {
       return res.status(404).json({
@@ -141,6 +151,7 @@ const handleGetContactInfo = async (req, res) => {
         user_id: user._id,
         userName: user.userName,
         profilePic: user.profilePic,
+        phoneNumber: user.phoneNumber,
       },
     });
   } catch (error) {

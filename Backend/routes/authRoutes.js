@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-// const upload = require("../middlewares/uploadMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 const {
   register,
   login,
@@ -8,7 +8,6 @@ const {
   handleGetContactInfo,
   handleUpdateProfile,
 } = require("../controllers/authController");
-
 const authMiddleware = require("../middlewares/authMiddleware");
 router.post("/register", register).post("/login", login);
 
@@ -17,7 +16,7 @@ router.get("/me", authMiddleware, handleGetProfile);
 router.put(
   "/profile",
   authMiddleware,
-  //   upload.single("profilePic"),
+  upload.single("profilePic"),
   handleUpdateProfile,
 );
 
