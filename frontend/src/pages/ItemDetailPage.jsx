@@ -2,8 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProduct, useDeleteProduct } from '../hooks/useProducts';
 import useUser, { useProfile } from '../hooks/useUser';
 
-const RATING_PLACEHOLDER = 4.5;
-
 function ItemDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,50 +54,69 @@ function ItemDetailPage() {
     );
   }
 
-  const image = item.images?.[0]?.url;
+  const images = item.images ?? [];
+  const image = images[activeImage]?.url ?? images[0]?.url;
   const sellerName = contactInfo?.userName ?? "Seller";
+  const sellerInitials = (isOwnProduct ? user?.userName : sellerName)?.substring(0, 2).toUpperCase() ?? "??";
 
   return (
     <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
 
+      <button className="detailBackBtn" onClick={() => navigate(-1)}>
+        ← Back to listings
+      </button>
+
       <div className="detailLayout">
         <div className="detailMainCol">
 
-          <div className="detailGrid">
-            <div>
-              {image ? (
-                <img src={image} alt={item.title} className="detailImage" />
-              ) : (
-                <div className="detailImage detailImagePlaceholder">No image</div>
-              )}
-            </div>
+          <div className="detailPanel">
+            <div className="detailGrid">
 
-            <div className="detailInfo">
-
-              <div>
-                <div className="detailTags" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {item.condition && (
-                    <span className="cardBadge badge-rent" style={{ position: 'static' }}>{item.condition}</span>
+              <div className="detailGallery">
+                <div className="detailImageWrapper">
+                  {image ? (
+                    <img src={image} alt={item.title} className="detailImage" />
+                  ) : (
+                    <div className="detailImage detailImagePlaceholder">No image</div>
                   )}
-                  <span className="statusIndicator">{item.category}</span>
-                  {item.status && <span className="statusIndicator">{item.status}</span>}
+                  {item.condition && (
+                    <span className="cardBadge badge-rent">{item.condition}</span>
+                  )}
                 </div>
 
-                <h1 style={{ fontFamily: 'Lora, serif', fontSize: '2.2rem', fontWeight: 700, marginTop: '16px', lineHeight: '1.2' }}>
-                  {item.title}
-                </h1>
+                {images.length > 1 && (
+                  <div className="detailThumbs">
+                    {images.map((img, index) => (
+                      <img
+                        key={img.public_id ?? index}
+                        src={img.url}
+                        alt={`${item.title} ${index + 1}`}
+                        className={`detailThumb ${index === activeImage ? 'active' : ''}`}
+                        onClick={() => setActiveImage(index)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                <div>Seller: <strong style={{ color: 'var(--text-main)' }}>{isOwnProduct ? 'You' : sellerName}</strong></div>
-                <div>Rating: <span style={{ color: '#b58d63' }}>★ {RATING_PLACEHOLDER}</span></div>
-                {item.location && <div>📍 {item.location}</div>}
-              </div>
+              <div className="detailInfo">
 
-              <div style={{ borderBottom: '1.5px solid var(--border-color)', paddingBottom: '20px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px', fontFamily: 'Lora, serif' }}>Description</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>{item.description}</p>
-              </div>
+                <div>
+                  <div className="detailTags" style={{ flexWrap: 'wrap' }}>
+                    <span className="statusIndicator">
+                      <span className="statusDot statusDot-active"></span>
+                      {item.category}
+                    </span>
+                    {item.status && (
+                      <span className="statusIndicator">
+                        <span className={`statusDot ${item.status === 'Available' ? 'statusDot-active' : 'statusDot-pending'}`}></span>
+                        {item.status}
+                      </span>
+                    )}
+                  </div>
+
+                  <h1 className="detailTitle">{item.title}</h1>
+                </div>
 
               <div className="detailPriceSection">
                 {item.type === 'rent' ? (

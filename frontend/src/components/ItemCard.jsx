@@ -1,15 +1,25 @@
 import { useNavigate } from "react-router-dom";
-
-const RATING_PLACEHOLDER = 4.5;
+import useUser from "../hooks/useUser";
+import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
 
 const ItemCard = ({ product }) => {
     const navigate = useNavigate();
     const image = product.images?.[0]?.url;
 
+    const { data: user } = useUser();
+    const { data: wishlistIds } = useWishlistIds();
+    const toggleWishlistMutation = useToggleWishlist();
+
+    const isWishlisted = Boolean(wishlistIds?.includes(String(product._id)));
+
     const openDetail = () => navigate(`/item/${product._id}`);
     const openChat = (e) => {
         e.stopPropagation();
         navigate(`/item/${product._id}`, { state: { showChat: true } });
+    };
+    const toggleWishlist = (e) => {
+        e.stopPropagation();
+        toggleWishlistMutation.mutate(product._id);
     };
 
     return (
@@ -37,9 +47,22 @@ const ItemCard = ({ product }) => {
                 <div className="cardFooter">
                     <div className="cardPrice">₹{product.price}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "0.8rem", color: "#b58d63" }}>
-                            ★ {RATING_PLACEHOLDER}
-                        </span>
+                        {user && (
+                            <button
+                                className="cardChatBtn"
+                                onClick={toggleWishlist}
+                                disabled={toggleWishlistMutation.isPending}
+                                title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                                style={
+                                    isWishlisted
+                                        ? { background: "rgba(220, 38, 38, 0.08)", borderColor: "#dc2626" }
+                                        : undefined
+                                }
+                            >
+                                {isWishlisted ? "❤️" : "🤍"}
+                            </button>
+                        )}
                         <button
                             className="cardChatBtn"
                             onClick={openChat}
