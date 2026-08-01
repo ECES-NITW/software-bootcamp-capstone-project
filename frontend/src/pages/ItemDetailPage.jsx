@@ -4,6 +4,7 @@ import { useRentExchangeDetail } from '../hooks/useRentExchange';
 import { useItemComments, useAddComment } from '../hooks/useComments';
 import { useSendMessage } from '../hooks/useChat';
 import useUser from '../hooks/useUser';
+import { useUpdateRentExchangeItem, useDeleteRentExchangeItem } from '../hooks/useRentExchange'
 
 function ItemDetailPage() {
   const { id } = useParams();
@@ -14,6 +15,34 @@ function ItemDetailPage() {
   const [activeReplyId, setActiveReplyId] = useState(null);
 
   const { data: user } = useUser();
+  const isOwner = user && item && user.id === item.sellerId
+const [isEditing, setIsEditing] = useState(false)
+const [editTitle, setEditTitle] = useState('')
+const [editPrice, setEditPrice] = useState('')
+const [editDescription, setEditDescription] = useState('')
+
+const updateMutation = useUpdateRentExchangeItem(id)
+const deleteMutation = useDeleteRentExchangeItem()
+
+const startEdit = () => {
+  setEditTitle(item.title)
+  setEditPrice(item.price)
+  setEditDescription(item.description)
+  setIsEditing(true)
+}
+
+const handleUpdate = (e) => {
+  e.preventDefault()
+  updateMutation.mutate(
+    { title: editTitle, price: Number(editPrice), description: editDescription },
+    { onSuccess: () => setIsEditing(false) }
+  )
+}
+
+const handleDelete = () => {
+  if (!confirm('Delete this listing? This cannot be undone.')) return
+  deleteMutation.mutate(id, { onSuccess: () => navigate('/feed') })
+}
   const isLoggedIn = Boolean(user);
 
   const { data: item, isLoading, isError } = useRentExchangeDetail(id);

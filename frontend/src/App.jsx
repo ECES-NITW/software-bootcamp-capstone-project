@@ -10,6 +10,7 @@ import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
 import RestrictedPage from './pages/RestrictedPage';
+import MyListingsPage from './pages/MyListingsPage'
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
       { path: 'chat', element: <ChatPage /> },
       { path: 'buy-items', element: <RestrictedPage featureName="Buy Items" /> },
       { path: 'sell-items', element: <RestrictedPage featureName="Sell Items" /> }
+      { path: 'my-listings', element: <MyListingsPage /> }
     ],
   },
   { path: '/login', element: <LoginPage /> },

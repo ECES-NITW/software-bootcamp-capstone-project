@@ -63,3 +63,30 @@ export const useCreateRentExchangeItem = () => {
         }
     });
 };
+
+export const useUpdateRentExchangeItem = (id) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (updatedData) => {
+            const response = await api.put(`/items/${id}`, updatedData);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["rent_exchange_items"] });
+            queryClient.invalidateQueries({ queryKey: ["rent_exchange_item", id] });
+        }
+    });
+};
+
+export const useDeleteRentExchangeItem = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await api.delete(`/items/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["rent_exchange_items"] });
+        }
+    });
+};
