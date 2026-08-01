@@ -1,19 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useProduct } from '../hooks/useProducts';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProduct, useDeleteProduct } from '../hooks/useProducts';
 import useUser, { useProfile } from '../hooks/useUser';
-import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
-import useMediaQuery from '../hooks/useMediaQuery';
-import ProductChatWrapper from '../components/ProductChatWrapper';
 
 function ItemDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const isDesktop = useMediaQuery('(min-width: 900px)');
-
-  const [showChat, setShowChat] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
 
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
@@ -24,13 +15,24 @@ function ItemDetailPage() {
 
   const isOwnProduct = Boolean(user && sellerId && String(sellerId) === String(user.user_id));
 
-  const { data: wishlistIds } = useWishlistIds();
-  const toggleWishlistMutation = useToggleWishlist();
-  const isWishlisted = Boolean(wishlistIds?.includes(String(id)));
+  const deleteMutation = useDeleteProduct();
 
-  useEffect(() => {
-    if (location.state?.showChat) setShowChat(true);
-  }, [location.state]);
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this listing?")) {
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          navigate('/feed');
+        },
+        onError: (err) => {
+          alert("Failed to delete listing: " + (err.response?.data?.message || err.message));
+        }
+      });
+    }
+  };
+
+  const handleStartChat = () => {
+    navigate('/chat', { state: { productId: id } });
+  };
 
   if (isLoading) {
     return (
@@ -56,17 +58,6 @@ function ItemDetailPage() {
   const image = images[activeImage]?.url ?? images[0]?.url;
   const sellerName = contactInfo?.userName ?? "Seller";
   const sellerInitials = (isOwnProduct ? user?.userName : sellerName)?.substring(0, 2).toUpperCase() ?? "??";
-
-  const chatOpen = showChat && !isOwnProduct;
-
-  const chatPanel = (
-    <ProductChatWrapper
-      productId={id}
-      productInfo={item}
-      contactInfo={contactInfo}
-      onClose={() => setShowChat(false)}
-    />
-  );
 
   return (
     <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
@@ -127,83 +118,91 @@ function ItemDetailPage() {
                   <h1 className="detailTitle">{item.title}</h1>
                 </div>
 
-                <div className="detailSellerCard">
-                  <div className="detailSellerAvatar">{sellerInitials}</div>
-                  <div>
-                    <div className="detailSellerName">{isOwnProduct ? 'You' : sellerName}</div>
-                    <div className="detailSellerMeta">
-                      {item.location ? <>📍 {item.location}</> : 'Campus seller'}
+              <div className="detailPriceSection">
+                {item.type === 'rent' ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700 }}>RENTAL RATE:</div>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        ₹{item.price}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>/week</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div className="detailDescription">
-                  <h3>Description</h3>
-                  <p>{item.description}</p>
-                </div>
-
-                <div className="detailPriceSection">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div className="detailPriceLabel">Price</div>
-                    <div className="detailPriceValue">${item.price}</div>
-                  </div>
-
-                  {isLoggedIn ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/checkout/${item._id}`)}>
-                        🔒 Secure Checkout
-                      </button>
-                      {!isOwnProduct && (
-                        <button
-                          className="btn"
-                          style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
-                          onClick={() => setShowChat(true)}
-                        >
-                          💬 Chat
-                        </button>
-                      )}
-                      {!isOwnProduct && (
-                        <button
-                          className="btn"
-                          style={{
-                            width: '100%',
-                            background: isWishlisted ? 'rgba(220, 38, 38, 0.08)' : 'var(--bg-secondary)',
-                            border: `1.5px solid ${isWishlisted ? '#dc2626' : 'var(--border-color)'}`,
-                            color: isWishlisted ? '#dc2626' : 'var(--primary)',
-                          }}
-                          onClick={() => toggleWishlistMutation.mutate(id)}
-                          disabled={toggleWishlistMutation.isPending}
-                        >
-                          {isWishlisted ? '❤️ Wishlisted' : '🤍 Wishlist'}
-                        </button>
-                      )}
+                    {item.deposit && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '20px', color: 'var(--text-muted)' }}>
+                        <span>Security Deposit (Refundable):</span>
+                        <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>₹{item.deposit}</span>
+                      </div>
+                    )}
+                    {isLoggedIn ? (
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        {isOwnProduct ? (
+                          <button className="btn" style={{ flex: 1, background: '#fee2e2', border: '1.5px solid #fca5a5', color: '#b91c1c' }} onClick={handleDelete} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Listing'}
+                          </button>
+                        ) : (
+                          <>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => alert("Checkout feature is currently a placeholder. Integration code will be added shortly.")}>
+                              🔒 Secure Rental Escrow
+                            </button>
+                            <button className="btn" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }} onClick={handleStartChat}>
+                              💬 Chat
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
+                        ⚠️ Authorization required. Please log in or register to rent or chat.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '6px' }}>TRADE PREFERENCES:</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-swap)' }}>
+                        🔁 Swap for: {item.preferences}
+                      </div>
                     </div>
-                  ) : (
-                    <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
-                      ⚠️ Authorization required. Please log in or register to buy or chat.
-                    </div>
-                  )}
-                </div>
 
+                    {isLoggedIn ? (
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        {isOwnProduct ? (
+                          <button className="btn" style={{ flex: 1, background: '#fee2e2', border: '1.5px solid #fca5a5', color: '#b91c1c' }} onClick={handleDelete} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Request'}
+                          </button>
+                        ) : (
+                          <>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => alert("Checkout feature is currently a placeholder. Integration code will be added shortly.")}>
+                              🔒 Secure Checkout
+                            </button>
+                            <button
+                              className="btn"
+                              style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
+                              onClick={handleStartChat}
+                            >
+                              💬 Chat
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
+                        ⚠️ Authorization required. Please log in or register to buy or chat.
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
             </div>
           </div>
 
+          
+
         </div>
 
-        {chatOpen && isDesktop && (
-          <aside className="detailChatSide">
-            {chatPanel}
-          </aside>
-        )}
       </div>
-
-      {chatOpen && !isDesktop && (
-        <div className="detailChatOverlay">
-          {chatPanel}
-        </div>
-      )}
 
     </div>
   );

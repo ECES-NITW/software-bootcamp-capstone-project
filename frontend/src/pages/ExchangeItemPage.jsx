@@ -8,15 +8,18 @@ function ExchangeItemPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Textbooks");
+  const [category, setCategory] = useState("Books");
+  const [condition, setCondition] = useState("Good");
   const [preferences, setPreferences] = useState("");
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
   const createItemMutation = useCreateProduct();
 
   const handleFile = (file) => {
     if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setImage(e.target.result);
@@ -58,21 +61,27 @@ function ExchangeItemPage() {
       return;
     }
 
-    const payload = {
-      title,
-      description,
-      category,
-      type: "swap",
-      preferences,
-      image: image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=600"
-    };
+    if (!imageFile) {
+      alert("Please upload at least one item photograph.");
+      return;
+    }
 
-    createItemMutation.mutate(payload, {
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("condition", condition);
+    formData.append("type", "swap");
+    formData.append("price", 0);
+    formData.append("preferences", preferences);
+    formData.append("images", imageFile);
+
+    createItemMutation.mutate(formData, {
       onSuccess: () => {
         navigate('/feed');
       },
       onError: (err) => {
-        alert("Failed to publish listing: " + (err.message || err));
+        alert("Failed to publish listing: " + (err.response?.data?.message || err.message || err));
       }
     });
   };
@@ -117,15 +126,30 @@ function ExchangeItemPage() {
             ></textarea>
           </div>
 
-          <div className="formGroup">
-            <label className="formLabel">Category</label>
-            <select className="formSelect" value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="Textbooks">Textbooks</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Clothing">Clothing</option>
-              <option value="Bicycle">Bicycle</option>
-              <option value="Others">Others</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="formGroup">
+              <label className="formLabel">Category</label>
+              <select className="formSelect" value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="Books">Books</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Sports">Sports</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Stationery">Stationery</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+
+            <div className="formGroup">
+              <label className="formLabel">Condition</label>
+              <select className="formSelect" value={condition} onChange={(e) => setCondition(e.target.value)}>
+                <option value="New">New</option>
+                <option value="Like New">Like New</option>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+              </select>
+            </div>
           </div>
 
           <div className="formGroup">

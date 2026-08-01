@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
 export const useProcessCheckout = () => {
@@ -11,6 +11,16 @@ export const useProcessCheckout = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["rent_exchange_items"] });
             queryClient.invalidateQueries({ queryKey: ["chat_conversations"] });
+        }
+    });
+};
+
+export const useUserOrders = () => {
+    return useQuery({
+        queryKey: ["user_orders"],
+        queryFn: async () => {
+            const response = await api.get("/checkout/orders");
+            return response.data.orders ?? [];
         }
     });
 };

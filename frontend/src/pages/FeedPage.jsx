@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 import ItemCard from '../components/ItemCard';
 
 function FeedPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [type, setType] = useState("all");
@@ -19,11 +21,7 @@ function FeedPage() {
     sort
   });
 
-  const visibleItems = user
-    ? items?.filter(
-        (p) => String(p.seller?._id ?? p.seller) !== String(user.user_id),
-      )
-    : items;
+  const visibleItems = items;
 
   const categories = ["All", "Electronics", "Books", "Furniture", "Clothing", "Sports", "Accessories", "Stationery", "Others"];
 
@@ -144,17 +142,17 @@ function FeedPage() {
         </div>
       ) : (
         <div className="grid">
-          {items?.map(item => (
+          {visibleItems?.map(item => (
             <div 
-              key={item.id} 
+              key={item._id || item.id} 
               className="productCard" 
               style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/item/${item.id}`)}
+              onClick={() => navigate(`/item/${item._id || item.id}`)}
             >
               <div className="cardImageWrapper">
-                <img className="cardImage" src={item.image} alt={item.title} />
+                <img className="cardImage" src={item.images?.[0]?.url || item.image} alt={item.title} />
                 <span className={`cardBadge ${item.type === 'rent' ? 'badge-rent' : 'badge-swap'}`}>
-                  {item.type}
+                  {item.type || 'sale'}
                 </span>
               </div>
               <div className="cardBody">

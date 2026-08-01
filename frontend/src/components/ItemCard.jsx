@@ -45,7 +45,7 @@ const ItemCard = ({ product }) => {
                 </h3>
                 <p className="cardDesc">{product.description}</p>
                 <div className="cardFooter">
-                    <div className="cardPrice">${product.price}</div>
+                    <div className="cardPrice">₹{product.price}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         {user && (
                             <button
