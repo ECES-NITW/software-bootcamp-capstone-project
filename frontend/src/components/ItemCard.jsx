@@ -2,8 +2,6 @@ import { useNavigate } from "react-router-dom";
 import useUser from "../hooks/useUser";
 import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
 
-const RATING_PLACEHOLDER = 4.5;
-
 const ItemCard = ({ product }) => {
     const navigate = useNavigate();
     const image = product.images?.[0]?.url;
@@ -49,9 +47,6 @@ const ItemCard = ({ product }) => {
                 <div className="cardFooter">
                     <div className="cardPrice">${product.price}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "0.8rem", color: "#b58d63" }}>
-                            ★ {RATING_PLACEHOLDER}
-                        </span>
                         {user && (
                             <button
                                 className="cardChatBtn"
