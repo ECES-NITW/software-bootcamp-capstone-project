@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useProduct } from '../hooks/useProducts';
 import { useItemComments, useAddComment } from '../hooks/useComments';
 import useUser, { useProfile } from '../hooks/useUser';
+import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
 import useMediaQuery from '../hooks/useMediaQuery';
 import ProductChatWrapper from '../components/ProductChatWrapper';
 
@@ -30,6 +31,10 @@ function ItemDetailPage() {
   const isOwnProduct = Boolean(user && sellerId && String(sellerId) === String(user.user_id));
 
   const addCommentMutation = useAddComment(id);
+
+  const { data: wishlistIds } = useWishlistIds();
+  const toggleWishlistMutation = useToggleWishlist();
+  const isWishlisted = Boolean(wishlistIds?.includes(String(id)));
 
   useEffect(() => {
     if (location.state?.showChat) setShowChat(true);
@@ -148,6 +153,20 @@ function ItemDetailPage() {
                         onClick={() => setShowChat(true)}
                       >
                         💬 Chat
+                      </button>
+                    )}
+                    {!isOwnProduct && (
+                      <button
+                        className="btn"
+                        style={{
+                          background: isWishlisted ? 'rgba(220, 38, 38, 0.08)' : 'var(--bg-secondary)',
+                          border: `1.5px solid ${isWishlisted ? '#dc2626' : 'var(--border-color)'}`,
+                          color: isWishlisted ? '#dc2626' : 'var(--primary)',
+                        }}
+                        onClick={() => toggleWishlistMutation.mutate(id)}
+                        disabled={toggleWishlistMutation.isPending}
+                      >
+                        {isWishlisted ? '❤️ Wishlisted' : '🤍 Wishlist'}
                       </button>
                     )}
                   </div>
