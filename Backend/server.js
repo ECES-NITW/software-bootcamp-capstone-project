@@ -11,6 +11,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const chatRouter = require("./routes/chatRouter");
 const productRoutes = require("./routes/productRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 
 const connectDB = require("./config/Database");
 
@@ -31,6 +32,7 @@ app.use(cookieParser());
 app.use("/auth", authRoutes);
 app.use("/chat", chatRouter);
 app.use("/products", productRoutes);
+app.use("/wishlist", wishlistRoutes);
 app.get("/", (req, res) => {
     res.send("Campus Marketplace Backend is Running!!");
 });
