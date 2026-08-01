@@ -33,7 +33,7 @@ function HomePage() {
           <button className="btn btn-primary" onClick={() => navigate('/rent-item')}>
             ✨ List a Rental
           </button>
-          <button className="btn" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }} onClick={() => navigate('/exchange-item')}>
+          <button className="btn btn-secondary" onClick={() => navigate('/exchange-item')}>
             🔄 List an Exchange
           </button>
         </div>

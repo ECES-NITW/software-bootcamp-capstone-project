@@ -132,7 +132,7 @@ function RentItemPage() {
             </div>
             
             <div className="formGroup">
-              <label className="formLabel">Rent Price per Week ($) *</label>
+              <label className="formLabel">Rent Price per Week (₹) *</label>
               <input 
                 type="number" 
                 className="formInput" 
@@ -146,7 +146,7 @@ function RentItemPage() {
           </div>
 
           <div className="formGroup">
-            <label className="formLabel">Security Deposit ($) (Optional)</label>
+            <label className="formLabel">Security Deposit (₹) (Optional)</label>
             <input 
               type="number" 
               className="formInput" 

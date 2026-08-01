@@ -144,8 +144,39 @@ function FeedPage() {
         </div>
       ) : (
         <div className="grid">
-          {visibleItems?.map(product => (
-            <ItemCard key={product._id} product={product} />
+          {items?.map(item => (
+            <div 
+              key={item.id} 
+              className="productCard" 
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate(`/item/${item.id}`)}
+            >
+              <div className="cardImageWrapper">
+                <img className="cardImage" src={item.image} alt={item.title} />
+                <span className={`cardBadge ${item.type === 'rent' ? 'badge-rent' : 'badge-swap'}`}>
+                  {item.type}
+                </span>
+              </div>
+              <div className="cardBody">
+                <span className="cardCategory">{item.category}</span>
+                <h3 className="cardTitle" title={item.title}>{item.title}</h3>
+                <p className="cardDesc">{item.description}</p>
+                <div className="cardFooter">
+                  {item.type === 'rent' ? (
+                    <div className="cardPrice">
+                      ₹{item.price}<span>/week</span>
+                    </div>
+                  ) : (
+                    <div className="cardPrice" style={{ fontSize: '0.82rem', color: 'var(--accent-swap)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      🔁 Swap for: {item.preferences}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#b58d63' }}>
+                    ★ {item.rating}
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
