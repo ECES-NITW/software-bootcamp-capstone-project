@@ -9,8 +9,10 @@ import ExchangeItemPage from './pages/ExchangeItemPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
-import BuyPage from './pages/BuyPage';
+import LookingForPage from './pages/LookingForPage';
 import PostItemsPage from './pages/PostItemsPage';
+import ProfilePage from './pages/ProfilePage';
+import OrdersPage from './pages/OrdersPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { io } from "socket.io-client";
 
@@ -22,7 +24,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'feed', element: <FeedPage /> },
       { path: 'item/:id', element: <ItemDetailPage /> },
-      { path: 'buy-items', element: <BuyPage /> },
+      { path: 'looking-for', element: <LookingForPage /> },
       {
         element: <ProtectedRoute />,
         children: [
@@ -31,6 +33,8 @@ const router = createBrowserRouter([
           { path: 'checkout/:id', element: <CheckoutPage /> },
           { path: 'chat', element: <ChatPage /> },
           { path: 'sell-items', element: <PostItemsPage /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'orders', element: <OrdersPage /> },
         ],
       },
     ],

@@ -17,6 +17,11 @@ export const useProducts = (filters = {}) => {
                         p.description?.toLowerCase().includes(q),
                 );
             }
+            if (type && type !== "all") {
+                data = data.filter((p) => p.type === type);
+            } else {
+                data = data.filter((p) => p.type !== "looking-for");
+            }
             if (category && category !== "All") {
                 data = data.filter((p) => p.category === category);
             }
@@ -68,6 +73,30 @@ export const useUpdateProduct = () => {
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
+        },
+    });
+};
+
+export const useUserProducts = (sellerId) => {
+    return useQuery({
+        queryKey: ["products", "user", sellerId],
+        enabled: Boolean(sellerId),
+        queryFn: async () => {
+            const response = await api.get("/products", { params: { seller: sellerId } });
+            return response.data.products ?? [];
+        }
+    });
+};
+
+export const useDeleteProduct = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await api.delete(`/products/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
         },
     });
 };
