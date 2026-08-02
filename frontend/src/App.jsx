@@ -13,6 +13,7 @@ import LookingForPage from './pages/LookingForPage';
 import PostItemsPage from './pages/PostItemsPage';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
+import WishlistPage from './pages/WishlistPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { io } from "socket.io-client";
 
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
           { path: 'sell-items', element: <PostItemsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'orders', element: <OrdersPage /> },
+          { path: 'wishlist', element: <WishlistPage /> },
         ],
       },
     ],
