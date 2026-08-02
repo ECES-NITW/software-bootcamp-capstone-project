@@ -13,6 +13,16 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      validator: function (email) {
+        return email.endsWith("@student.nitw.ac.in");
+      },
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      unique: true,
     },
     password: {
       type: String,

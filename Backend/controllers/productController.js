@@ -3,15 +3,8 @@ const cloudinary = require("../config/cloudinary");
 
 const createProduct = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      price,
-      category,
-      condition,
-      location,
-      status,
-    } = req.body;
+    const { title, description, price, category, condition, location, status } =
+      req.body;
 
     // Check if at least one image is uploaded
     if (!req.files || req.files.length === 0) {
@@ -51,7 +44,7 @@ const createProduct = async (req, res) => {
     // Populate seller details
     const populatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email"
+      "name email",
     );
 
     return res.status(201).json({
@@ -69,7 +62,6 @@ const createProduct = async (req, res) => {
     });
   }
 };
-
 
 // Get All Products
 
@@ -160,7 +152,7 @@ const getProducts = async (req, res) => {
         totalPages: 0,
         products: [],
       });
-    }  
+    }
 
     return res.status(200).json({
       success: true,
@@ -180,13 +172,40 @@ const getProducts = async (req, res) => {
   }
 };
 
+
+// Get My Products
+
+const getMyProducts = async (req, res) => {
+  try {
+    const products = await Product.find({
+      seller: req.user.id,
+    })
+      .populate("seller", "name email")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      totalProducts: products.length,
+      products,
+    });
+  } catch (error) {
+    console.error("Get My Products Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch your products.",
+      error: error.message,
+    });
+  }
+};
+
 // Get Product By ID
 
 const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(
       "seller",
-      "name email"
+      "name email",
     );
 
     if (!product) {
@@ -211,7 +230,6 @@ const getProductById = async (req, res) => {
   }
 };
 
-
 // Update Product
 
 const updateProduct = async (req, res) => {
@@ -234,7 +252,6 @@ const updateProduct = async (req, res) => {
 
     // If new images are uploaded then delete old images and upload new images
     if (req.files && req.files.length > 0) {
-      
       for (const image of product.images) {
         await cloudinary.uploader.destroy(image.public_id);
       }
@@ -268,7 +285,7 @@ const updateProduct = async (req, res) => {
 
     const updatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email"
+      "name email",
     );
 
     return res.status(200).json({
@@ -286,7 +303,6 @@ const updateProduct = async (req, res) => {
     });
   }
 };
-
 
 // Delete Product
 
@@ -334,6 +350,7 @@ const deleteProduct = async (req, res) => {
 module.exports = {
   createProduct,
   getProducts,
+  getMyProducts,
   getProductById,
   updateProduct,
   deleteProduct,

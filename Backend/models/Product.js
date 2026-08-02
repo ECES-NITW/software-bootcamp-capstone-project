@@ -6,14 +6,12 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      
     },
 
     description: {
       type: String,
       required: true,
       trim: true,
-      
     },
 
     price: {
@@ -21,10 +19,14 @@ const productSchema = new mongoose.Schema(
       required: true,
       min: [0, "Price cannot be negative"],
     },
-
+    listingType: {
+      type: String,
+      enum: ["sell", "rent", "exchange"],
+      required: true,
+    },
     category: {
       type: String,
-      required: true, 
+      required: true,
       enum: [
         "Electronics",
         "Books",
@@ -39,7 +41,7 @@ const productSchema = new mongoose.Schema(
 
     condition: {
       type: String,
-      required: true, 
+      required: true,
       enum: ["New", "Like New", "Good", "Fair"],
     },
 
@@ -76,7 +78,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 productSchema.index({ title: "text", description: "text" });
@@ -90,6 +92,5 @@ productSchema.index({
 productSchema.index({ seller: 1 });
 
 productSchema.index({ createdAt: -1 });
-
 
 module.exports = mongoose.model("Product", productSchema);
