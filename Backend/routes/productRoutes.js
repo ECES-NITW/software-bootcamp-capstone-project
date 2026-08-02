@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   createProduct,
   getProducts,
+  getMyProducts,
   getProductById,
   updateProduct,
   deleteProduct,
@@ -14,6 +15,11 @@ const upload = require("../middlewares/uploadMiddleware");
 
 // Public Routes
 router.get("/", getProducts);
+
+// Protected Route
+router.get("/my-products", authMiddleware, getMyProducts);
+
+// Public Route
 router.get("/:id", getProductById);
 
 // Protected Routes

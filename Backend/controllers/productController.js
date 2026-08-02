@@ -172,6 +172,33 @@ const getProducts = async (req, res) => {
   }
 };
 
+
+// Get My Products
+
+const getMyProducts = async (req, res) => {
+  try {
+    const products = await Product.find({
+      seller: req.user.id,
+    })
+      .populate("seller", "name email")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      totalProducts: products.length,
+      products,
+    });
+  } catch (error) {
+    console.error("Get My Products Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch your products.",
+      error: error.message,
+    });
+  }
+};
+
 // Get Product By ID
 
 const getProductById = async (req, res) => {
@@ -323,6 +350,7 @@ const deleteProduct = async (req, res) => {
 module.exports = {
   createProduct,
   getProducts,
+  getMyProducts,
   getProductById,
   updateProduct,
   deleteProduct,
