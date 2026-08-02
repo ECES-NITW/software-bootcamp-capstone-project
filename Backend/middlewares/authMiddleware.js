@@ -11,7 +11,8 @@ const authMiddleware = (req, res, next) => {
         message: AUTH_401_MESSAGE,
       });
     }
-
+    console.log(process.env.JWT_SECRET);
+    console.log(process.env.JwT_SECRET);
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
