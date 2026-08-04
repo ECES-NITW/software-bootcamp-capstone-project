@@ -20,6 +20,11 @@ const conversationSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Agreed price - Only when an offer gets accepted
+    currentOffer: {
+      type: Number,
+      default: null,
+    },
   },
   { timestamps: true },
 );

@@ -17,9 +17,25 @@ const messageSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        type: {
+            type: String,
+            enum: ["text", "offer"],
+            default: "text",
+        },
         message: {
             type: String,
-            required: true,
+            required: function () {
+                return this.type !== "offer";
+            },
+        },
+        offerAmount: {
+            type: Number,
+            min: [0, "Offer cannot be negative"],
+        },
+        offerStatus: {
+            type: String,
+            enum: ["none", "accepted", "declined"],
+            default: "none",
         },
     },
     { timestamps: true }

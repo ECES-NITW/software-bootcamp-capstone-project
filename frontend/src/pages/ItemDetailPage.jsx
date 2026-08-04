@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProduct, useDeleteProduct } from '../hooks/useProducts';
 import useUser, { useProfile } from '../hooks/useUser';
 import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
+import { useAgreedPrice } from '../hooks/useChat';
 
 function ItemDetailPage() {
   const { id } = useParams();
@@ -24,6 +25,9 @@ function ItemDetailPage() {
   const { data: wishlistIds } = useWishlistIds();
   const toggleWishlistMutation = useToggleWishlist();
   const isWishlisted = Boolean(wishlistIds?.includes(String(id)));
+
+  const { data: agreedPrice } = useAgreedPrice(id);
+  const hasAgreedPrice = isLoggedIn && agreedPrice != null;
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
@@ -143,8 +147,28 @@ function ItemDetailPage() {
 
                 <div className="detailPriceSection">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div className="detailPriceLabel">Price</div>
-                    <div className="detailPriceValue">₹{item.price}</div>
+                    <div className="detailPriceLabel">
+                      {hasAgreedPrice ? 'Agreed Price' : 'Price'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                      {hasAgreedPrice && (
+                        <span
+                          style={{
+                            fontSize: '1rem',
+                            color: 'var(--text-muted)',
+                            textDecoration: 'line-through',
+                          }}
+                        >
+                          ₹{item.price}
+                        </span>
+                      )}
+                      <div
+                        className="detailPriceValue"
+                        style={hasAgreedPrice ? { color: '#2e8b57' } : undefined}
+                      >
+                        ₹{hasAgreedPrice ? agreedPrice : item.price}
+                      </div>
+                    </div>
                   </div>
 
                   {isLoggedIn ? (
