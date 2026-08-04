@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
 const Conversation = require("./models/Conversation");
-const { addMessage: sendMessage } = require("./controllers/chatController");
+const {
+    addMessage: sendMessage,
+    updateOfferStatus,
+} = require("./controllers/chatController");
 
 // True if userId is the buyer or seller on the conversation.
 const isParticipant = (conversation, userId) =>
@@ -51,19 +54,55 @@ function openChat(io) {
 
                 socket.to(data.conversationId).emit("response", {
                     id: data.msgId,
+                    msgId: data.msgId,
                     conversationId: data.conversationId,
                     message: data.message,
                     sender: socket.userId,
+                    type: data.type === "offer" ? "offer" : "text",
+                    offerAmount: data.offerAmount,
+                    offerStatus: data.type === "offer" ? "none" : undefined,
                 });
             } catch (err) {
                 console.error("Failed to persist message", err);
-                // Notify only the sender that their message failed.
                 socket.emit("response", {
                     id: data.msgId,
+                    msgId: data.msgId,
                     conversationId: data.conversationId,
                     message: data.message,
                     sender: socket.userId,
                     status: "error",
+                });
+            }
+        });
+
+        socket.on("offer_update", async (data) => {
+            try {
+                const conversation = await Conversation.findById(
+                    data.conversationId,
+                );
+                if (!isParticipant(conversation, socket.userId)) {
+                    throw new Error("Not a participant");
+                }
+
+                const message = await updateOfferStatus({
+                    msgId: data.msgId,
+                    status: data.status,
+                    userId: socket.userId,
+                });
+
+                io.to(data.conversationId).emit("offerUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    offerStatus: message.offerStatus,
+                    offerAmount: message.offerAmount,
+                });
+            } catch (err) {
+                console.error("Failed to update offer", err);
+                socket.emit("offerUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    status: "error",
+                    error: err.message,
                 });
             }
         });

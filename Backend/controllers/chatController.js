@@ -93,16 +93,102 @@ const getMessages = async (req, res) => {
 
 const addMessage = async (messageData) => {
   const conversationId = messageData.conversationId;
+  const type = messageData.type === "offer" ? "offer" : "text";
+
+  if (type === "offer") {
+    const amount = Number(messageData.offerAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error("Invalid offer amount");
+    }
+
+    await Message.create({
+      msgId: messageData.msgId,
+      conversationId,
+      sender: messageData.sender,
+      type,
+      message: messageData.message || "",
+      offerAmount: amount,
+      offerStatus: "none",
+    });
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: `Offered ₹${amount}`,
+    });
+    return;
+  }
+
   const message = messageData.message;
   await Message.create({
     msgId: messageData.msgId,
     conversationId,
     sender: messageData.sender,
+    type,
     message,
   });
   await Conversation.findByIdAndUpdate(conversationId, {
     lastMessage: message,
   });
+};
+
+const updateOfferStatus = async ({ msgId, status, userId }) => {
+  if (!["accepted", "declined"].includes(status)) {
+    throw new Error("Invalid offer status");
+  }
+
+  const message = await Message.findOne({ msgId });
+  if (!message || message.type !== "offer") {
+    throw new Error("Offer not found");
+  }
+  if (String(message.sender) === String(userId)) {
+    throw new Error("You cannot respond to your own offer");
+  }
+  if (message.offerStatus !== "none") {
+    throw new Error("Offer has already been resolved");
+  }
+
+  message.offerStatus = status;
+  await message.save();
+
+  const conversationUpdate = {
+    lastMessage:
+      status === "accepted"
+        ? `Offer of ₹${message.offerAmount} accepted`
+        : `Offer of ₹${message.offerAmount} declined`,
+  };
+  // The agreed price only changes when an offer is accepted
+  if (status === "accepted") {
+    conversationUpdate.currentOffer = message.offerAmount;
+  }
+  await Conversation.findByIdAndUpdate(
+    message.conversationId,
+    conversationUpdate,
+  );
+
+  return message;
+};
+
+const getAgreedPrice = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const productId = req.params.productId;
+
+    const conversation = await Conversation.findOne({
+      productId,
+      $or: [{ buyerId: userId }, { sellerId: userId }],
+      currentOffer: { $ne: null },
+    })
+      .sort({ updatedAt: -1 })
+      .select("currentOffer");
+
+    return res.status(200).json({
+      success: true,
+      agreedPrice: conversation?.currentOffer ?? null,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 const getConversations = async (req, res) => {
@@ -150,5 +236,7 @@ module.exports = {
   getProductConversation,
   getMessages,
   addMessage,
+  updateOfferStatus,
+  getAgreedPrice,
   getConversations,
 };

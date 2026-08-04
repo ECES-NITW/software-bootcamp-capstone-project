@@ -2,9 +2,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import useUser from "../hooks/useUser";
 
-// Gates its child routes on an authorized session. Instead of auto-redirecting,
-// it renders an inline "login required" page with a button - so the user isn't
-// bounced away mid-navigation.
 const ProtectedRoute = () => {
     const { data: user, isLoading, error } = useUser();
     const navigate = useNavigate();

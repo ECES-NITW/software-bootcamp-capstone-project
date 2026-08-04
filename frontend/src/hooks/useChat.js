@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../api/api";
 
-// Fetches (or lazily creates) the conversation for a given product and returns
-// its metadata (conversationId, lastMessage, ...). Only productId is sent - the
-// seller is derived from the product server-side.
 export const useProductConversation = (productId) => {
     return useQuery({
         queryKey: ["chat_conversation", productId],
@@ -25,9 +22,19 @@ export const useConversations = () => {
     });
 };
 
-// Messages for a conversation. Only runs once a conversationId exists. No
-// polling - live updates arrive over the socket and are written into this same
-// cache; the query just provides the DB-authoritative baseline on load/refetch.
+// Agreed (accepted offer) price for the logged in user on a product, or null
+export const useAgreedPrice = (productId) => {
+    const token = localStorage.getItem("access_token");
+    return useQuery({
+        queryKey: ["agreed_price", productId],
+        enabled: Boolean(token && productId),
+        queryFn: async () => {
+            const response = await api.get(`/chat/agreed-price/${productId}`);
+            return response.data.agreedPrice;
+        },
+    });
+};
+
 export const useMessages = (conversationId) => {
     return useQuery({
         queryKey: ["chat_messages", conversationId],
