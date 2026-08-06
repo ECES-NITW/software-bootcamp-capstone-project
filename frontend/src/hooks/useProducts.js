@@ -1,12 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
+export const listingPrice = (product) =>
+    product?.price ?? product?.rentPrice ?? product?.budget ?? 0;
+
 export const useProducts = (filters = {}) => {
     const { category, type, search, sort } = filters;
     return useQuery({
         queryKey: ["products", search, category, type, sort],
         queryFn: async () => {
-            const response = await api.get("/products");
+            const response = await api.get("/products", { params: { sort } });
             let data = response.data.products ?? [];
 
             if (search) {
@@ -18,21 +21,12 @@ export const useProducts = (filters = {}) => {
                 );
             }
             if (type && type !== "all") {
-                data = data.filter((p) => p.type === type);
+                data = data.filter((p) => p.types?.includes(type));
             } else {
-                data = data.filter((p) => p.type !== "looking-for");
+                data = data.filter((p) => !p.types?.includes("looking-for"));
             }
             if (category && category !== "All") {
                 data = data.filter((p) => p.category === category);
-            }
-            if (sort === "price-low") {
-                data = [...data].sort((a, b) => (a.price || 0) - (b.price || 0));
-            } else if (sort === "price-high") {
-                data = [...data].sort((a, b) => (b.price || 0) - (a.price || 0));
-            } else {
-                data = [...data].sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-                );
             }
             return data;
         },

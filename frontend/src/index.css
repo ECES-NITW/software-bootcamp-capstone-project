@@ -574,6 +574,43 @@ h1, h2, h3, .navLogo {
   color: var(--text-muted);
 }
 
+.listingTypeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.listingTypeTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+}
+
+.listingTypeTag.tag-sell {
+  background: rgba(46, 139, 87, 0.08);
+  border-color: rgba(46, 139, 87, 0.25);
+  color: var(--accent-buy);
+}
+
+.listingTypeTag.tag-rent {
+  background: #e6f3ff;
+  border-color: #b3d7ff;
+  color: var(--accent-rent);
+}
+
+.listingTypeTag.tag-exchange {
+  background: #fdf5e6;
+  border-color: #f2e3c9;
+  color: var(--accent-swap);
+}
+
 /* Browse Feed layout */
 .feedHeader {
   display: flex;
@@ -788,6 +825,25 @@ h1, h2, h3, .navLogo {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.detailPriceRows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.detailPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.detailPriceRow + .detailPriceRow {
+  border-top: 1.5px solid var(--border-color);
+  padding-top: 14px;
 }
 
 .detailPriceLabel {

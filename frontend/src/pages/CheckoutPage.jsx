@@ -17,7 +17,7 @@ function CheckoutPage() {
   const { data: item, isLoading, isError } = useProduct(id);
   const checkoutMutation = useProcessCheckout();
 
-  const rentPrice = item ? item.price : 0;
+  const rentPrice = item ? (item.rentPrice ?? item.price ?? 0) : 0;
   const depositPrice = item ? (item.deposit || 0) : 0;
 
   const calculateTotal = () => {

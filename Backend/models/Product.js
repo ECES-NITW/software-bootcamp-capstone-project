@@ -14,16 +14,67 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    types: {
+      type: [String],
+      required: true,
+      enum: {
+        values: ["sell", "rent", "exchange", "looking-for"],
+      },
+      validate: {
+        validator: (types) => Array.isArray(types) && types.length > 0,
+      },
+    },
+
     price: {
       type: Number,
-      required: true,
       min: [0, "Price cannot be negative"],
+      required: [
+        function () {
+          return this.types.includes("sell");
+        },
+        "Price is required for items listed for sale.",
+      ],
     },
-    listingType: {
+
+    rentPrice: {
+      type: Number,
+      min: [0, "Rent price cannot be negative"],
+      required: [
+        function () {
+          return this.types.includes("rent");
+        },
+        "Rent price is required for items listed for rent.",
+      ],
+    },
+
+    deposit: {
+      type: Number,
+      min: [0, "Deposit cannot be negative"],
+      default: undefined,
+    },
+
+    exchangePreferences: {
       type: String,
-      enum: ["sell", "rent", "exchange"],
-      required: true,
+      trim: true,
+      required: [
+        function () {
+          return this.types.includes("exchange");
+        },
+        "Preferred trade item(s) are required for items listed for exchange.",
+      ],
     },
+
+    budget: {
+      type: Number,
+      min: [0, "Budget cannot be negative"],
+      required: [
+        function () {
+          return this.types.includes("looking-for");
+        },
+        "Budget is required for looking-for requests.",
+      ],
+    },
+
     category: {
       type: String,
       required: true,
@@ -88,6 +139,8 @@ productSchema.index({
   condition: 1,
   price: 1,
 });
+
+productSchema.index({ types: 1 });
 
 productSchema.index({ seller: 1 });
 

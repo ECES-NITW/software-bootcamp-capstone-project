@@ -72,8 +72,8 @@ function RentItemPage() {
     formData.append("description", description);
     formData.append("category", category);
     formData.append("condition", condition);
-    formData.append("type", "rent");
-    formData.append("price", Number(price));
+    formData.append("types", "rent");
+    formData.append("rentPrice", Number(price));
     formData.append("deposit", deposit ? Number(deposit) : 0);
     formData.append("images", imageFile);
 

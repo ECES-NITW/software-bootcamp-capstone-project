@@ -71,9 +71,8 @@ function ExchangeItemPage() {
     formData.append("description", description);
     formData.append("category", category);
     formData.append("condition", condition);
-    formData.append("type", "swap");
-    formData.append("price", 0);
-    formData.append("preferences", preferences);
+    formData.append("types", "exchange");
+    formData.append("exchangePreferences", preferences);
     formData.append("images", imageFile);
 
     createItemMutation.mutate(formData, {

@@ -32,7 +32,7 @@ function LookingForPage() {
   const [budget, setBudget] = useState("");
   const [error, setError] = useState("");
 
-  const requests = items?.filter(item => item.type === "looking-for") ?? [];
+  const requests = items?.filter(item => item.types?.includes("looking-for")) ?? [];
 
   const handlePostRequest = async (e) => {
     e.preventDefault();
@@ -48,8 +48,8 @@ function LookingForPage() {
     formData.append("description", description);
     formData.append("category", category);
     formData.append("condition", condition);
-    formData.append("price", Number(budget));
-    formData.append("type", "looking-for");
+    formData.append("budget", Number(budget));
+    formData.append("types", "looking-for");
 
     try {
       await createRequestMutation.mutateAsync(formData);
@@ -179,7 +179,7 @@ function LookingForPage() {
                 <div className="cardFooter" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'stretch' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="cardPrice" style={{ fontSize: '1.05rem' }}>
-                      Budget: ₹{item.price}
+                      Budget: ₹{item.budget ?? item.price}
                     </div>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       Wanted: {item.condition}

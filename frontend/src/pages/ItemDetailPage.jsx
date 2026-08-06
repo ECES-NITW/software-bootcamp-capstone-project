@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProduct, useDeleteProduct } from '../hooks/useProducts';
+import { useProduct, useDeleteProduct, listingPrice } from '../hooks/useProducts';
 import useUser, { useProfile } from '../hooks/useUser';
 import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
 import { useAgreedPrice } from '../hooks/useChat';
@@ -68,6 +68,11 @@ function ItemDetailPage() {
 
   const images = item.images ?? [];
   const image = images[activeImage]?.url ?? images[0]?.url;
+
+  const types = item.types ?? [];
+  const canSell = types.includes("sell");
+  const canRent = types.includes("rent");
+  const canExchange = types.includes("exchange");
   const sellerName = contactInfo?.userName ?? "Seller";
   const sellerInitials = (isOwnProduct ? user?.userName : sellerName)?.substring(0, 2).toUpperCase() ?? "??";
 
@@ -146,29 +151,80 @@ function ItemDetailPage() {
                 </div>
 
                 <div className="detailPriceSection">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div className="detailPriceLabel">
-                      {hasAgreedPrice ? 'Agreed Price' : 'Price'}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-                      {hasAgreedPrice && (
-                        <span
-                          style={{
-                            fontSize: '1rem',
-                            color: 'var(--text-muted)',
-                            textDecoration: 'line-through',
-                          }}
-                        >
-                          ₹{item.price}
-                        </span>
-                      )}
-                      <div
-                        className="detailPriceValue"
-                        style={hasAgreedPrice ? { color: '#2e8b57' } : undefined}
-                      >
-                        ₹{hasAgreedPrice ? agreedPrice : item.price}
+                  <div className="detailPriceRows">
+                    {canSell && (
+                      <div className="detailPriceRow">
+                        <div className="detailPriceLabel">
+                          {hasAgreedPrice ? 'Agreed Price' : 'Price'}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+                          {hasAgreedPrice && (
+                            <span
+                              style={{
+                                fontSize: '1rem',
+                                color: 'var(--text-muted)',
+                                textDecoration: 'line-through',
+                              }}
+                            >
+                              ₹{item.price}
+                            </span>
+                          )}
+                          <div
+                            className="detailPriceValue"
+                            style={hasAgreedPrice ? { color: '#2e8b57' } : undefined}
+                          >
+                            ₹{hasAgreedPrice ? agreedPrice : item.price}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {!canSell && hasAgreedPrice && (
+                      <div className="detailPriceRow">
+                        <div className="detailPriceLabel">Agreed Price</div>
+                        <div className="detailPriceValue" style={{ color: '#2e8b57' }}>
+                          ₹{agreedPrice}
+                        </div>
+                      </div>
+                    )}
+
+                    {canRent && (
+                      <div className="detailPriceRow">
+                        <div>
+                          <div className="detailPriceLabel">Rent</div>
+                          {item.deposit > 0 && (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                              Refundable deposit ₹{item.deposit}
+                            </div>
+                          )}
+                        </div>
+                        <div className="detailPriceValue">
+                          ₹{item.rentPrice}
+                          <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}> /week</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {canExchange && (
+                      <div className="detailPriceRow">
+                        <div>
+                          <div className="detailPriceLabel">Exchange</div>
+                          {item.exchangePreferences && (
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                              Wants: {item.exchangePreferences}
+                            </div>
+                          )}
+                        </div>
+                        <span className="listingTypeTag tag-exchange">Open to swaps</span>
+                      </div>
+                    )}
+
+                    {!canSell && !canRent && !canExchange && (
+                      <div className="detailPriceRow">
+                        <div className="detailPriceLabel">Budget</div>
+                        <div className="detailPriceValue">₹{listingPrice(item)}</div>
+                      </div>
+                    )}
                   </div>
 
                   {isLoggedIn ? (

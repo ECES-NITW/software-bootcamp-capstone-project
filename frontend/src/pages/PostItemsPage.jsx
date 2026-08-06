@@ -49,6 +49,7 @@ function PostItemPage() {
         const formData = new FormData();
         formData.append("title", title);
         formData.append("description", description);
+        formData.append("types", "sell");
         formData.append("price", Number(price));
         formData.append("category", category);
         formData.append("condition", condition);

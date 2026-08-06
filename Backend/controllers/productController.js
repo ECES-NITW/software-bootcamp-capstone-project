@@ -1,13 +1,31 @@
 const Product = require("../models/Product");
 const cloudinary = require("../config/cloudinary");
 
+const toNumber = (value) =>  value === undefined || value === null || value === "" ? undefined : Number(value);
+const toArray = (value) => [].concat(value ?? []);
+
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category, condition, location, status } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      rentPrice,
+      deposit,
+      exchangePreferences,
+      budget,
+      category,
+      condition,
+      location,
+      status,
+    } = req.body;
+
+    const types = toArray(req.body.types);
+
+    const requiresImages = types.some((type) => type !== "looking-for");
 
     // Check if at least one image is uploaded
-    if (!req.files || req.files.length === 0) {
+    if (requiresImages && (!req.files || req.files.length === 0)) {
       return res.status(400).json({
         success: false,
         message: "Please upload at least one product image.",
@@ -17,7 +35,7 @@ const createProduct = async (req, res) => {
     // Upload images to Cloudinary
     const imageData = [];
 
-    for (const file of req.files) {
+    for (const file of req.files ?? []) {
       const result = await cloudinary.uploader.upload(file.path, {
         folder: "campus-marketplace/products",
       });
@@ -32,7 +50,12 @@ const createProduct = async (req, res) => {
     const product = await Product.create({
       title,
       description,
-      price,
+      types,
+      price: types.includes("sell") ? toNumber(price) : undefined,
+      rentPrice: types.includes("rent") ? toNumber(rentPrice) : undefined,
+      deposit: types.includes("rent") ? toNumber(deposit) : undefined,
+      exchangePreferences: types.includes("exchange") ? exchangePreferences : undefined,
+      budget: types.includes("looking-for") ? toNumber(budget) : undefined,
       category,
       condition,
       location,
@@ -54,6 +77,14 @@ const createProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Product Error:", error);
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to create product.",
+        error: error.message,
+      });
+    }
 
     return res.status(500).json({
       success: false,
@@ -85,6 +116,12 @@ const getProducts = async (req, res) => {
       filter.$text = { $search: search };
     }
 
+    const requestedTypes = toArray(req.query.types);
+
+    if (requestedTypes.length > 0) {
+      filter.types = { $in: requestedTypes };
+    }
+
     // Category Filter
     if (category) {
       filter.category = category;
@@ -113,11 +150,13 @@ const getProducts = async (req, res) => {
 
     switch (sort) {
       case "price":
-        sortOption = { price: 1 };
+      case "price-low":
+        sortOption = { effectivePrice: 1 };
         break;
 
       case "-price":
-        sortOption = { price: -1 };
+      case "price-high":
+        sortOption = { effectivePrice: -1 };
         break;
 
       case "oldest":
@@ -125,6 +164,7 @@ const getProducts = async (req, res) => {
         break;
 
       case "newest":
+      case "recent":
       default:
         sortOption = { createdAt: -1 };
         break;
@@ -137,11 +177,22 @@ const getProducts = async (req, res) => {
 
     const totalProducts = await Product.countDocuments(filter);
 
-    const products = await Product.find(filter)
-      .populate("seller", "name email")
-      .sort(sortOption)
-      .skip(skip)
-      .limit(pageLimit);
+    const products = await Product.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          effectivePrice: {
+            $ifNull: ["$price", { $ifNull: ["$rentPrice", { $ifNull: ["$budget", 0] }] }],
+          },
+        },
+      },
+      { $sort: sortOption },
+      { $skip: skip },
+      { $limit: pageLimit },
+      { $project: { effectivePrice: 0 } },
+    ]);
+
+    await Product.populate(products, { path: "seller", select: "name email" });
 
     if (products.length === 0) {
       return res.status(200).json({
@@ -272,14 +323,37 @@ const updateProduct = async (req, res) => {
       product.images = imageData;
     }
 
+    if (req.body.types !== undefined) {
+      product.types = toArray(req.body.types);
+    }
+
     // Update fields
     product.title = req.body.title || product.title;
     product.description = req.body.description || product.description;
-    product.price = req.body.price || product.price;
     product.category = req.body.category || product.category;
     product.condition = req.body.condition || product.condition;
     product.location = req.body.location || product.location;
     product.status = req.body.status || product.status;
+
+    const typeFields = [
+      { field: "price", type: "sell", value: toNumber(req.body.price) },
+      { field: "rentPrice", type: "rent", value: toNumber(req.body.rentPrice) },
+      { field: "deposit", type: "rent", value: toNumber(req.body.deposit) },
+      {
+        field: "exchangePreferences",
+        type: "exchange",
+        value: req.body.exchangePreferences,
+      },
+      { field: "budget", type: "looking-for", value: toNumber(req.body.budget) },
+    ];
+
+    for (const { field, type, value } of typeFields) {
+      if (!product.types.includes(type)) {
+        product[field] = undefined;
+      } else if (value !== undefined) {
+        product[field] = value;
+      }
+    }
 
     await product.save();
 
@@ -295,6 +369,14 @@ const updateProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Update Product Error:", error);
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to update product.",
+        error: error.message,
+      });
+    }
 
     return res.status(500).json({
       success: false,

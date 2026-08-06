@@ -1,10 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import useUser from "../hooks/useUser";
+import { listingPrice } from "../hooks/useProducts";
 import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
+
+const TYPE_PRIORITY = ["sell", "rent", "exchange"];
 
 const ItemCard = ({ product }) => {
     const navigate = useNavigate();
     const image = product.images?.[0]?.url;
+
+    const types = product.types ?? [];
+    const primaryType = TYPE_PRIORITY.find((type) => types.includes(type));
+    const secondaryTypes = TYPE_PRIORITY.filter(
+        (type) => types.includes(type) && type !== primaryType,
+    );
 
     const { data: user } = useUser();
     const { data: wishlistIds } = useWishlistIds();
@@ -20,6 +29,23 @@ const ItemCard = ({ product }) => {
     const toggleWishlist = (e) => {
         e.stopPropagation();
         toggleWishlistMutation.mutate(product._id);
+    };
+
+    const renderPrimaryPrice = () => {
+        if (primaryType === "sell") {
+            return <>₹{product.price}</>;
+        }
+        if (primaryType === "rent") {
+            return (
+                <>
+                    ₹{product.rentPrice} <span>/week</span>
+                </>
+            );
+        }
+        if (primaryType === "exchange") {
+            return <>Exchange</>;
+        }
+        return <>₹{listingPrice(product)}</>;
     };
 
     return (
@@ -45,7 +71,7 @@ const ItemCard = ({ product }) => {
                 </h3>
                 <p className="cardDesc">{product.description}</p>
                 <div className="cardFooter">
-                    <div className="cardPrice">₹{product.price}</div>
+                    <div className="cardPrice">{renderPrimaryPrice()}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         {user && (
                             <button
@@ -73,6 +99,17 @@ const ItemCard = ({ product }) => {
                         </button>
                     </div>
                 </div>
+                {secondaryTypes.length > 0 && (
+                    <div className="listingTypeRow">
+                        {secondaryTypes.map((type) => (
+                            <span key={type} className={`listingTypeTag tag-${type}`}>
+                                {type === "rent"
+                                    ? `Rent ₹${product.rentPrice}/week`
+                                    : "Available for exchange"}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
