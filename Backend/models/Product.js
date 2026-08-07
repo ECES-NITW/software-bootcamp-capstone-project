@@ -27,52 +27,40 @@ const productSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      min: [0, "Price cannot be negative"],
-      required: [
-        function () {
-          return this.types.includes("sell");
-        },
-        "Price is required for items listed for sale.",
-      ],
+      min: 0,
+      required: function () {
+        return this.types.includes("sell");
+      },
     },
 
     rentPrice: {
       type: Number,
-      min: [0, "Rent price cannot be negative"],
-      required: [
-        function () {
-          return this.types.includes("rent");
-        },
-        "Rent price is required for items listed for rent.",
-      ],
+      min: 0,
+      required: function () {
+        return this.types.includes("rent");
+      },
     },
 
     deposit: {
       type: Number,
-      min: [0, "Deposit cannot be negative"],
+      min: 0,
       default: undefined,
     },
 
     exchangePreferences: {
       type: String,
       trim: true,
-      required: [
-        function () {
-          return this.types.includes("exchange");
-        },
-        "Preferred trade item(s) are required for items listed for exchange.",
-      ],
+      required: function () {
+        return this.types.includes("exchange");
+      },
     },
 
     budget: {
       type: Number,
-      min: [0, "Budget cannot be negative"],
-      required: [
-        function () {
-          return this.types.includes("looking-for");
-        },
-        "Budget is required for looking-for requests.",
-      ],
+      min: 0,
+      required: function () {
+        return this.types.includes("looking-for");
+      },
     },
 
     category: {
