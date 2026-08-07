@@ -135,10 +135,6 @@ function PostItemPage() {
             setError("Title, description, category and condition are required.");
             return;
         }
-        if (images.length === 0) {
-            setError("Please add at least one image.");
-            return;
-        }
         if (isSelected("sell") && price === "") {
             setError("Enter a selling price, or turn off the Sell option.");
             return;
@@ -387,7 +383,7 @@ function PostItemPage() {
 
                     <div className="formGroup" style={{ marginBottom: 0 }}>
                         <label className="formLabel">
-                            Photographs * (up to {MAX_IMAGES})
+                            Photographs (optional, up to {MAX_IMAGES})
                         </label>
 
                         {images.length > 0 && (

@@ -3,12 +3,6 @@ const User = require("../models/User");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
 
-const LISTING_TYPE_FOR_ORDER = {
-  buy: "sell",
-  rent: "rent",
-  exchange: "exchange",
-};
-
 const createOrder = async (req, res) => {
   try {
     const buyer = req.user.id;
@@ -20,14 +14,14 @@ const createOrder = async (req, res) => {
       swapProduct,
     } = req.body;
 
-    const requiredListingType = LISTING_TYPE_FOR_ORDER[orderType];
-
-    if (!requiredListingType) {
+    if (!["buy", "rent", "exchange"].includes(orderType)) {
       return res.status(400).json({
         success: false,
         message: "Order type must be one of buy, rent or exchange.",
       });
     }
+
+    const requiredListingType = orderType === "buy" ? "sell" : orderType;
 
     const product = await Product.findById(productId);
     if (!product) {

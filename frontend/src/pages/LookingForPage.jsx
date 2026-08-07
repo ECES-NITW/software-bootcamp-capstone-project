@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProducts, useCreateProduct } from '../hooks/useProducts';
+import { useProducts, useCreateProduct, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 
 const CATEGORIES = [
@@ -167,7 +167,7 @@ function LookingForPage() {
           {requests.map(item => (
             <div key={item._id} className="productCard">
               <div className="cardImageWrapper">
-                <img className="cardImage" src={item.images?.[0]?.url || item.image} alt={item.title} />
+                <img className="cardImage" src={item.images?.[0]?.url || PLACEHOLDER_IMAGE} alt={item.title} />
                 <span className="cardBadge badge-swap" style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--primary)' }}>
                   Looking For
                 </span>

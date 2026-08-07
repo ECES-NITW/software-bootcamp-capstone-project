@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProduct, useDeleteProduct, listingPrice } from '../hooks/useProducts';
+import { useProduct, useDeleteProduct, listingPrice, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
 import useUser, { useProfile } from '../hooks/useUser';
 import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
 import { useAgreedPrice } from '../hooks/useChat';
@@ -91,11 +91,11 @@ function ItemDetailPage() {
 
               <div className="detailGallery">
                 <div className="detailImageWrapper">
-                  {image ? (
-                    <img src={image} alt={item.title} className="detailImage" />
-                  ) : (
-                    <div className="detailImage detailImagePlaceholder">No image</div>
-                  )}
+                  <img
+                    src={image || PLACEHOLDER_IMAGE}
+                    alt={item.title}
+                    className="detailImage"
+                  />
                   {item.condition && (
                     <span className="cardBadge badge-rent">{item.condition}</span>
                   )}

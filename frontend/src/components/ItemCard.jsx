@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import useUser from "../hooks/useUser";
-import { listingPrice } from "../hooks/useProducts";
+import { listingPrice, PLACEHOLDER_IMAGE } from "../hooks/useProducts";
 import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
 
 const TYPE_PRIORITY = ["sell", "rent", "exchange"];
@@ -55,11 +55,11 @@ const ItemCard = ({ product }) => {
             onClick={openDetail}
         >
             <div className="cardImageWrapper">
-                {image ? (
-                    <img className="cardImage" src={image} alt={product.title} />
-                ) : (
-                    <div className="cardImage cardImagePlaceholder">No image</div>
-                )}
+                <img
+                    className="cardImage"
+                    src={image || PLACEHOLDER_IMAGE}
+                    alt={product.title}
+                />
                 {product.condition && (
                     <span className="cardBadge badge-rent">{product.condition}</span>
                 )}

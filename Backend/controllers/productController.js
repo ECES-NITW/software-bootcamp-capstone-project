@@ -22,16 +22,6 @@ const createProduct = async (req, res) => {
 
     const types = toArray(req.body.types);
 
-    const requiresImages = types.some((type) => type !== "looking-for");
-
-    // Check if at least one image is uploaded
-    if (requiresImages && (!req.files || req.files.length === 0)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload at least one product image.",
-      });
-    }
-
     // Upload images to Cloudinary
     const imageData = [];
 
@@ -77,14 +67,6 @@ const createProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Product Error:", error);
-
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Failed to create product.",
-        error: error.message,
-      });
-    }
 
     return res.status(500).json({
       success: false,
@@ -151,12 +133,12 @@ const getProducts = async (req, res) => {
     switch (sort) {
       case "price":
       case "price-low":
-        sortOption = { effectivePrice: 1 };
+        sortOption = { price: 1 };
         break;
 
       case "-price":
       case "price-high":
-        sortOption = { effectivePrice: -1 };
+        sortOption = { price: -1 };
         break;
 
       case "oldest":
@@ -177,22 +159,11 @@ const getProducts = async (req, res) => {
 
     const totalProducts = await Product.countDocuments(filter);
 
-    const products = await Product.aggregate([
-      { $match: filter },
-      {
-        $addFields: {
-          effectivePrice: {
-            $ifNull: ["$price", { $ifNull: ["$rentPrice", { $ifNull: ["$budget", 0] }] }],
-          },
-        },
-      },
-      { $sort: sortOption },
-      { $skip: skip },
-      { $limit: pageLimit },
-      { $project: { effectivePrice: 0 } },
-    ]);
-
-    await Product.populate(products, { path: "seller", select: "name email" });
+    const products = await Product.find(filter)
+      .populate("seller", "name email")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(pageLimit);
 
     if (products.length === 0) {
       return res.status(200).json({
@@ -369,14 +340,6 @@ const updateProduct = async (req, res) => {
     });
   } catch (error) {
     console.error("Update Product Error:", error);
-
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Failed to update product.",
-        error: error.message,
-      });
-    }
 
     return res.status(500).json({
       success: false,

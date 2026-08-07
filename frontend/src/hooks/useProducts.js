@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
+export const PLACEHOLDER_IMAGE = "/No_Image_Available_image.jpg";
+
 export const listingPrice = (product) =>
     product?.price ?? product?.rentPrice ?? product?.budget ?? 0;
 
