@@ -30,11 +30,11 @@ function HomePage() {
         </p>
         
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-          <button className="btn btn-primary" onClick={() => navigate('/rent-item')}>
-            ✨ List a Rental
+          <button className="btn btn-primary" onClick={() => navigate('/post-item')}>
+            Post an Item
           </button>
-          <button className="btn btn-secondary" onClick={() => navigate('/exchange-item')}>
-            🔄 List an Exchange
+          <button className="btn btn-secondary" onClick={() => navigate('/feed')}>
+            Browse Catalog
           </button>
         </div>
       </section>
