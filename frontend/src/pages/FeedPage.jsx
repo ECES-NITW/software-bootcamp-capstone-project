@@ -110,8 +110,8 @@ function FeedPage() {
               Rentals
             </button>
             <button 
-              className={`toggleTab ${type === 'swap' ? 'active-swap' : ''}`} 
-              onClick={() => setType('swap')}
+              className={`toggleTab ${type === 'exchange' ? 'active-swap' : ''}`}
+              onClick={() => setType('exchange')}
               style={{ padding: '8px 24px' }}
             >
               Swaps

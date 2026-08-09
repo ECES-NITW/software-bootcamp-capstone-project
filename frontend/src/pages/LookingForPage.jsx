@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProducts, useCreateProduct } from '../hooks/useProducts';
+import { useProducts, useCreateProduct, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 
 const CATEGORIES = [
@@ -32,7 +32,7 @@ function LookingForPage() {
   const [budget, setBudget] = useState("");
   const [error, setError] = useState("");
 
-  const requests = items?.filter(item => item.type === "looking-for") ?? [];
+  const requests = items?.filter(item => item.types?.includes("looking-for")) ?? [];
 
   const handlePostRequest = async (e) => {
     e.preventDefault();
@@ -48,8 +48,8 @@ function LookingForPage() {
     formData.append("description", description);
     formData.append("category", category);
     formData.append("condition", condition);
-    formData.append("price", Number(budget));
-    formData.append("type", "looking-for");
+    formData.append("budget", Number(budget));
+    formData.append("types", "looking-for");
 
     try {
       await createRequestMutation.mutateAsync(formData);
@@ -167,7 +167,7 @@ function LookingForPage() {
           {requests.map(item => (
             <div key={item._id} className="productCard">
               <div className="cardImageWrapper">
-                <img className="cardImage" src={item.images?.[0]?.url || item.image} alt={item.title} />
+                <img className="cardImage" src={item.images?.[0]?.url || PLACEHOLDER_IMAGE} alt={item.title} />
                 <span className="cardBadge badge-swap" style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--primary)' }}>
                   Looking For
                 </span>
@@ -179,7 +179,7 @@ function LookingForPage() {
                 <div className="cardFooter" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'stretch' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="cardPrice" style={{ fontSize: '1.05rem' }}>
-                      Budget: ₹{item.price}
+                      Budget: ₹{item.budget ?? item.price}
                     </div>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       Wanted: {item.condition}

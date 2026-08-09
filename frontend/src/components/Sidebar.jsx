@@ -70,14 +70,8 @@ function Sidebar() {
         <NavLink to="/looking-for" style={{ display: 'flex', alignItems: 'center' }}>
           <PageIcon /> Looking For
         </NavLink>
-        <NavLink to="/rent-item" style={{ display: 'flex', alignItems: 'center' }}>
-          <PageIcon /> Rent
-        </NavLink>
-        <NavLink to="/sell-items" style={{ display: 'flex', alignItems: 'center' }}>
-          <PageIcon /> Sell
-        </NavLink>
-        <NavLink to="/exchange-item" style={{ display: 'flex', alignItems: 'center' }}>
-          <PageIcon /> Exchange
+        <NavLink to="/post-item" style={{ display: 'flex', alignItems: 'center' }}>
+          <PageIcon /> Post an Item
         </NavLink>
         
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
