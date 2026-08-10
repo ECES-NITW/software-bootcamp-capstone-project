@@ -156,8 +156,8 @@ const getProducts = async (req, res) => {
         break;
     }
 
-    const currentPage = Number(page);
-    const pageLimit = Number(limit);
+    const currentPage = Math.max(1, Math.floor(Number(page)) || 1);
+    const pageLimit = Math.min(200, Math.max(1, Math.floor(Number(limit)) || 10));
 
     const skip = (currentPage - 1) * pageLimit;
 

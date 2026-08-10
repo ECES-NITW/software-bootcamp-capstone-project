@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProducts } from '../hooks/useProducts';
+import { useInfiniteProducts } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 import ItemCard from '../components/ItemCard';
 
@@ -12,12 +12,21 @@ function FeedPage() {
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
 
-  const { data: items, isLoading, isError } = useProducts({
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts({
     category,
     type,
     search,
     sort
   });
+
+  const items = data?.pages.flatMap((page) => page.products ?? []);
 
   // Only show other students' items, not your own listings
   const visibleItems = user
@@ -144,11 +153,24 @@ function FeedPage() {
           <p style={{ color: 'var(--text-muted)' }}>No items found matching your filters.</p>
         </div>
       ) : (
-        <div className="grid">
-          {visibleItems?.map(product => (
-            <ItemCard key={product._id} product={product} />
-          ))}
-        </div>
+        <>
+          <div className="grid">
+            {visibleItems?.map(product => (
+              <ItemCard key={product._id} product={product} />
+            ))}
+          </div>
+          {hasNextPage && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

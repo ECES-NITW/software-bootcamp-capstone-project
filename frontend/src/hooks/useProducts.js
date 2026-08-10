@@ -1,5 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+    useQuery,
+    useInfiniteQuery,
+    useMutation,
+    useQueryClient,
+} from "@tanstack/react-query";
 import api from "../api/api";
+
+export const PRODUCTS_PAGE_SIZE = 24;
 
 export const PLACEHOLDER_IMAGE = "/No_Image_Available_image.jpg";
 
@@ -20,6 +27,28 @@ export const useProducts = (filters = {}) => {
             const response = await api.get("/products", { params });
             return response.data.products ?? [];
         },
+    });
+};
+
+export const useInfiniteProducts = (filters = {}) => {
+    const { category, type, search, sort } = filters;
+    return useInfiniteQuery({
+        queryKey: ["products", "infinite", search, category, type, sort],
+        initialPageParam: 1,
+        placeholderData: (prev) => prev,
+        queryFn: async ({ pageParam }) => {
+            const params = { sort, page: pageParam, limit: PRODUCTS_PAGE_SIZE };
+            if (search) params.search = search;
+            if (category && category !== "All") params.category = category;
+            params.types =
+                type && type !== "all" ? [type] : ["sell", "rent", "exchange"];
+            const response = await api.get("/products", { params });
+            return response.data;
+        },
+        getNextPageParam: (lastPage) =>
+            lastPage.currentPage < lastPage.totalPages
+                ? lastPage.currentPage + 1
+                : undefined,
     });
 };
 
