@@ -95,7 +95,11 @@ const getProducts = async (req, res) => {
 
     // Search
     if (search) {
-      filter.$text = { $search: search };
+      const pattern = String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.$or = [
+        { title: { $regex: pattern, $options: "i" } },
+        { description: { $regex: pattern, $options: "i" } },
+      ];
     }
 
     const requestedTypes = toArray(req.query.types);

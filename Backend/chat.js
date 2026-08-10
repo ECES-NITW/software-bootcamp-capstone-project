@@ -27,6 +27,7 @@ function openChat(io) {
     io.on("connection", (socket) => {
         // Join a conversation room only if the user is a participant.
         socket.on("join_room", async (convo_id) => {
+            if (typeof convo_id !== "string") return;
             try {
                 const conversation = await Conversation.findById(convo_id);
                 if (isParticipant(conversation, socket.userId)) {
@@ -38,10 +39,12 @@ function openChat(io) {
         });
 
         socket.on("leave_room", (convo_id) => {
+            if (typeof convo_id !== "string") return;
             socket.leave(convo_id);
         });
 
         socket.on("message", async (data) => {
+            if (!data || typeof data !== "object" || typeof data.conversationId !== "string") return;
             try {
                 const conversation = await Conversation.findById(
                     data.conversationId,
@@ -76,6 +79,7 @@ function openChat(io) {
         });
 
         socket.on("offer_update", async (data) => {
+            if (!data || typeof data !== "object" || typeof data.conversationId !== "string") return;
             try {
                 const conversation = await Conversation.findById(
                     data.conversationId,
@@ -86,6 +90,7 @@ function openChat(io) {
 
                 const message = await updateOfferStatus({
                     msgId: data.msgId,
+                    conversationId: data.conversationId,
                     status: data.status,
                     userId: socket.userId,
                 });

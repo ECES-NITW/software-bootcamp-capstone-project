@@ -129,12 +129,12 @@ const addMessage = async (messageData) => {
   });
 };
 
-const updateOfferStatus = async ({ msgId, status, userId }) => {
+const updateOfferStatus = async ({ msgId, conversationId, status, userId }) => {
   if (!["accepted", "declined"].includes(status)) {
     throw new Error("Invalid offer status");
   }
 
-  const message = await Message.findOne({ msgId });
+  const message = await Message.findOne({ msgId, conversationId });
   if (!message || message.type !== "offer") {
     throw new Error("Offer not found");
   }

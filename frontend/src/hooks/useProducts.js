@@ -10,27 +10,15 @@ export const useProducts = (filters = {}) => {
     const { category, type, search, sort } = filters;
     return useQuery({
         queryKey: ["products", search, category, type, sort],
+        placeholderData: (prev) => prev,
         queryFn: async () => {
-            const response = await api.get("/products", { params: { sort } });
-            let data = response.data.products ?? [];
-
-            if (search) {
-                const q = search.toLowerCase();
-                data = data.filter(
-                    (p) =>
-                        p.title?.toLowerCase().includes(q) ||
-                        p.description?.toLowerCase().includes(q),
-                );
-            }
-            if (type && type !== "all") {
-                data = data.filter((p) => p.types?.includes(type));
-            } else {
-                data = data.filter((p) => !p.types?.includes("looking-for"));
-            }
-            if (category && category !== "All") {
-                data = data.filter((p) => p.category === category);
-            }
-            return data;
+            const params = { sort, limit: 200 };
+            if (search) params.search = search;
+            if (category && category !== "All") params.category = category;
+            params.types =
+                type && type !== "all" ? [type] : ["sell", "rent", "exchange"];
+            const response = await api.get("/products", { params });
+            return response.data.products ?? [];
         },
     });
 };
