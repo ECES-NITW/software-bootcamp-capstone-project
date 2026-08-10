@@ -19,7 +19,7 @@ export const useUserOrders = () => {
     return useQuery({
         queryKey: ["user_orders"],
         queryFn: async () => {
-            const response = await api.get("/checkout/orders");
+            const response = await api.get("/orders/myorders");
             return response.data.orders ?? [];
         }
     });

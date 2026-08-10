@@ -78,7 +78,7 @@ export const useUserProducts = (sellerId) => {
         queryKey: ["products", "user", sellerId],
         enabled: Boolean(sellerId),
         queryFn: async () => {
-            const response = await api.get("/products", { params: { seller: sellerId } });
+            const response = await api.get("/products/my-products");
             return response.data.products ?? [];
         }
     });
