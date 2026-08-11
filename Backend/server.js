@@ -12,6 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const chatRouter = require("./routes/chatRouter");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 
 const connectDB = require("./config/Database");
 
@@ -33,6 +34,7 @@ app.use("/auth", authRoutes);
 app.use("/chat", chatRouter);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
+app.use("/wishlist", wishlistRoutes);
 app.get("/", (req, res) => {
   res.send("Campus Marketplace Backend is Running!!");
 });

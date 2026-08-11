@@ -1,15 +1,28 @@
-import { useState } from "react";
-import { useConversations } from "../hooks/useChat";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useConversations, useProductConversation } from "../hooks/useChat";
 import Chat from "../components/Chat";
 import { useQueryClient } from "@tanstack/react-query";
 
 function ChatPage() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const productId = location.state?.productId;
+    const { data: stateConversation } = useProductConversation(productId);
+
     const { data: conversationsData, isLoading, isError } = useConversations();
     const conversations = conversationsData?.conversations;
-    const queryClient = useQueryClient()
+    const queryClient = useQueryClient();
 
     const [view, setView] = useState("buyer");
     const [selectedConvId, setSelectedConvId] = useState(null);
+
+    useEffect(() => {
+        if (stateConversation?.conversationId) {
+            setView("buyer");
+            setSelectedConvId(stateConversation.conversationId);
+        }
+    }, [stateConversation]);
 
     const switchView = (next) => {
         setView(next);
@@ -43,7 +56,9 @@ function ChatPage() {
                 </p>
             </div>
 
-            <div className="chatContainer">
+            <div
+                className={`chatContainer ${selectedConvId && activeConv ? "mobile-chat-open" : ""}`}
+            >
                 <div className="chatSidebar">
                     <div className="chatListHeader">Conversations</div>
 
@@ -166,7 +181,27 @@ function ChatPage() {
                 <div className="chatMain">
                     {selectedConvId && activeConv ? (
                         <>
-                            <div className="chatHeader">
+                            <div
+                                className="chatHeader"
+                                onClick={() => {
+                                    const pid = activeProduct?._id ?? activeConv?.productId;
+                                    if (pid) navigate(`/item/${pid}`);
+                                }}
+                                style={{ cursor: activeProduct ? "pointer" : "default" }}
+                                title={activeProduct ? "View product details" : undefined}
+                            >
+                                <button
+                                    type="button"
+                                    className="chatBackBtn"
+                                    title="Back to conversations"
+                                    aria-label="Back to conversations"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedConvId(null);
+                                    }}
+                                >
+                                    &#8592;
+                                </button>
                                 {activeOther?.profilePic ? (
                                     <img
                                         src={activeOther.profilePic}
@@ -204,6 +239,14 @@ function ChatPage() {
                                         </span>
                                     )}
                                 </div>
+                                {activeConv?.currentOffer != null && (
+                                    <span
+                                        className="chatOfferChip"
+                                        title="Agreed price"
+                                    >
+                                        Agreed ₹{activeConv.currentOffer}
+                                    </span>
+                                )}
                                 {activeProduct?.images?.[0]?.url && (
                                     <img
                                         src={activeProduct.images[0].url}

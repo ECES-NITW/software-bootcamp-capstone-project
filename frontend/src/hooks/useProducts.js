@@ -1,12 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
+export const PLACEHOLDER_IMAGE = "/No_Image_Available_image.jpg";
+
+export const listingPrice = (product) =>
+    product?.price ?? product?.rentPrice ?? product?.budget ?? 0;
+
 export const useProducts = (filters = {}) => {
     const { category, type, search, sort } = filters;
     return useQuery({
         queryKey: ["products", search, category, type, sort],
         queryFn: async () => {
-            const response = await api.get("/products");
+            const response = await api.get("/products", { params: { sort } });
             let data = response.data.products ?? [];
 
             if (search) {
@@ -17,17 +22,13 @@ export const useProducts = (filters = {}) => {
                         p.description?.toLowerCase().includes(q),
                 );
             }
+            if (type && type !== "all") {
+                data = data.filter((p) => p.types?.includes(type));
+            } else {
+                data = data.filter((p) => !p.types?.includes("looking-for"));
+            }
             if (category && category !== "All") {
                 data = data.filter((p) => p.category === category);
-            }
-            if (sort === "price-low") {
-                data = [...data].sort((a, b) => (a.price || 0) - (b.price || 0));
-            } else if (sort === "price-high") {
-                data = [...data].sort((a, b) => (b.price || 0) - (a.price || 0));
-            } else {
-                data = [...data].sort(
-                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-                );
             }
             return data;
         },
@@ -68,6 +69,30 @@ export const useUpdateProduct = () => {
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
+        },
+    });
+};
+
+export const useUserProducts = (sellerId) => {
+    return useQuery({
+        queryKey: ["products", "user", sellerId],
+        enabled: Boolean(sellerId),
+        queryFn: async () => {
+            const response = await api.get("/products", { params: { seller: sellerId } });
+            return response.data.products ?? [];
+        }
+    });
+};
+
+export const useDeleteProduct = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id) => {
+            const response = await api.delete(`/products/${id}`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
         },
     });
 };

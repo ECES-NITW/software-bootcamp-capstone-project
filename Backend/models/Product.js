@@ -14,16 +14,55 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    types: {
+      type: [String],
+      required: true,
+      enum: {
+        values: ["sell", "rent", "exchange", "looking-for"],
+      },
+      validate: {
+        validator: (types) => Array.isArray(types) && types.length > 0,
+      },
+    },
+
     price: {
       type: Number,
-      required: true,
-      min: [0, "Price cannot be negative"],
+      min: 0,
+      required: function () {
+        return this.types.includes("sell");
+      },
     },
-    listingType: {
+
+    rentPrice: {
+      type: Number,
+      min: 0,
+      required: function () {
+        return this.types.includes("rent");
+      },
+    },
+
+    deposit: {
+      type: Number,
+      min: 0,
+      default: undefined,
+    },
+
+    exchangePreferences: {
       type: String,
-      enum: ["sell", "rent", "exchange"],
-      required: true,
+      trim: true,
+      required: function () {
+        return this.types.includes("exchange");
+      },
     },
+
+    budget: {
+      type: Number,
+      min: 0,
+      required: function () {
+        return this.types.includes("looking-for");
+      },
+    },
+
     category: {
       type: String,
       required: true,
@@ -88,6 +127,8 @@ productSchema.index({
   condition: 1,
   price: 1,
 });
+
+productSchema.index({ types: 1 });
 
 productSchema.index({ seller: 1 });
 

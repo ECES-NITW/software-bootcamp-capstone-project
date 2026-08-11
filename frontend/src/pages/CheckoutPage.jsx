@@ -17,7 +17,7 @@ function CheckoutPage() {
   const { data: item, isLoading, isError } = useProduct(id);
   const checkoutMutation = useProcessCheckout();
 
-  const rentPrice = item ? item.price : 0;
+  const rentPrice = item ? (item.rentPrice ?? item.price ?? 0) : 0;
   const depositPrice = item ? (item.deposit || 0) : 0;
 
   const calculateTotal = () => {
@@ -193,13 +193,17 @@ function CheckoutPage() {
               </div>
             </div>
 
+            <div style={{ background: '#fef3c7', border: '1px dashed #d97706', color: '#b45309', padding: '12px', borderRadius: '8px', fontSize: '0.88rem', textAlign: 'center', marginBottom: '8px' }}>
+              ℹ️ Checkout is in placeholder mode. Integration code will be added shortly.
+            </div>
+
             <button 
               type="submit" 
               className="btn btn-primary" 
-              disabled={checkoutMutation.isPending}
-              style={{ width: '100%', marginTop: '12px' }}
+              disabled
+              style={{ width: '100%', marginTop: '12px', opacity: 0.7, cursor: 'not-allowed' }}
             >
-              {checkoutMutation.isPending ? 'Processing Escrow...' : '🔒 Confirmed: Fund Escrow'}
+              🔒 Fund Escrow (Placeholder)
             </button>
           </form>
 

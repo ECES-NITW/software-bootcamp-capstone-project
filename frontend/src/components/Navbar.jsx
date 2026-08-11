@@ -17,7 +17,7 @@ function Navbar() {
       <div className="navRight">
         {user ? (
           <>
-            <span className="navUser">{user.userName}</span>
+            <span className="navUser" style={{ cursor: 'pointer' }} onClick={() => navigate('/profile')}>{user.userName}</span>
             <button onClick={handleLogout}>Logout</button>
           </>
         ) : (

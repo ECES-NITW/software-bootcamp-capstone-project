@@ -13,6 +13,16 @@ const createOrder = async (req, res) => {
       rentalEndDate,
       swapProduct,
     } = req.body;
+
+    if (!["buy", "rent", "exchange"].includes(orderType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Order type must be one of buy, rent or exchange.",
+      });
+    }
+
+    const requiredListingType = orderType === "buy" ? "sell" : orderType;
+
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({
@@ -34,17 +44,30 @@ const createOrder = async (req, res) => {
       });
     }
 
+    if (!product.types.includes(requiredListingType)) {
+      return res.status(400).json({
+        success: false,
+        message: `This listing is not available for ${requiredListingType}. It is listed for: ${product.types.join(", ")}.`,
+      });
+    }
+
+    const amountByOrderType = {
+      buy: product.price,
+      rent: product.rentPrice,
+      exchange: 0,
+    };
+
     const order = new Order({
       buyer,
       seller: product.seller,
       product: product._id,
       orderType,
-      totalAmount: product.price,
+      totalAmount: amountByOrderType[orderType] ?? 0,
 
       rentalStartDate: orderType === "rent" ? rentalStartDate : undefined,
       rentalEndDate: orderType === "rent" ? rentalEndDate : undefined,
 
-      swapProduct: orderType === "swap" ? swapProduct : undefined,
+      swapProduct: orderType === "exchange" ? swapProduct : undefined,
     });
 
     await order.save();

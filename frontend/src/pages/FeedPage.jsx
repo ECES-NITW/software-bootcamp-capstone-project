@@ -19,6 +19,7 @@ function FeedPage() {
     sort
   });
 
+  // Only show other students' items, not your own listings
   const visibleItems = user
     ? items?.filter(
         (p) => String(p.seller?._id ?? p.seller) !== String(user.user_id),
@@ -90,7 +91,6 @@ function FeedPage() {
               <option value="recent">Recently Added</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
-              <option value="rating">Top Rated Seller</option>
             </select>
           </div>
 
@@ -110,8 +110,8 @@ function FeedPage() {
               Rentals
             </button>
             <button 
-              className={`toggleTab ${type === 'swap' ? 'active-swap' : ''}`} 
-              onClick={() => setType('swap')}
+              className={`toggleTab ${type === 'exchange' ? 'active-swap' : ''}`}
+              onClick={() => setType('exchange')}
               style={{ padding: '8px 24px' }}
             >
               Swaps
@@ -145,39 +145,8 @@ function FeedPage() {
         </div>
       ) : (
         <div className="grid">
-          {items?.map(item => (
-            <div 
-              key={item.id} 
-              className="productCard" 
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate(`/item/${item.id}`)}
-            >
-              <div className="cardImageWrapper">
-                <img className="cardImage" src={item.image} alt={item.title} />
-                <span className={`cardBadge ${item.type === 'rent' ? 'badge-rent' : 'badge-swap'}`}>
-                  {item.type}
-                </span>
-              </div>
-              <div className="cardBody">
-                <span className="cardCategory">{item.category}</span>
-                <h3 className="cardTitle" title={item.title}>{item.title}</h3>
-                <p className="cardDesc">{item.description}</p>
-                <div className="cardFooter">
-                  {item.type === 'rent' ? (
-                    <div className="cardPrice">
-                      ₹{item.price}<span>/week</span>
-                    </div>
-                  ) : (
-                    <div className="cardPrice" style={{ fontSize: '0.82rem', color: 'var(--accent-swap)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🔁 Swap for: {item.preferences}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#b58d63' }}>
-                    ★ {item.rating}
-                  </div>
-                </div>
-              </div>
-            </div>
+          {visibleItems?.map(product => (
+            <ItemCard key={product._id} product={product} />
           ))}
         </div>
       )}

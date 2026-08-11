@@ -4,13 +4,14 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import FeedPage from './pages/FeedPage';
-import RentItemPage from './pages/RentItemPage';
-import ExchangeItemPage from './pages/ExchangeItemPage';
 import ItemDetailPage from './pages/ItemDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
-import BuyPage from './pages/BuyPage';
+import LookingForPage from './pages/LookingForPage';
 import PostItemsPage from './pages/PostItemsPage';
+import ProfilePage from './pages/ProfilePage';
+import OrdersPage from './pages/OrdersPage';
+import WishlistPage from './pages/WishlistPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { io } from "socket.io-client";
 
@@ -22,15 +23,16 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'feed', element: <FeedPage /> },
       { path: 'item/:id', element: <ItemDetailPage /> },
-      { path: 'buy-items', element: <BuyPage /> },
+      { path: 'looking-for', element: <LookingForPage /> },
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'rent-item', element: <RentItemPage /> },
-          { path: 'exchange-item', element: <ExchangeItemPage /> },
           { path: 'checkout/:id', element: <CheckoutPage /> },
           { path: 'chat', element: <ChatPage /> },
-          { path: 'sell-items', element: <PostItemsPage /> },
+          { path: 'post-item', element: <PostItemsPage /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'orders', element: <OrdersPage /> },
+          { path: 'wishlist', element: <WishlistPage /> },
         ],
       },
     ],
