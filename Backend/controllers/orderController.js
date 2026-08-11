@@ -199,11 +199,15 @@ const rejectOrder = async (req, res) => {
       });
     }
 
+    if (order.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending orders can be rejected",
+      });
+    }
+
     order.status = "rejected";
     await order.save();
-    await Product.findByIdAndUpdate(order.product, {
-      status: "Available",
-    });
     return res.status(200).json({
       success: true,
       message: "Order rejected successfully",
@@ -247,9 +251,6 @@ const cancelOrder = async (req, res) => {
 
     order.status = "cancelled";
     await order.save();
-    await Product.findByIdAndUpdate(order.product, {
-      status: "Available",
-    });
     return res.status(200).json({
       success: true,
       message: "Order cancelled successfully",

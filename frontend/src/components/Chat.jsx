@@ -11,6 +11,7 @@ const Chat = ({ conversationId }) => {
 
     const [msgInput, setMsgInput] = useState("");
     const [isConnected, setIsConnected] = useState(socket.connected);
+    const [connectionFailed, setConnectionFailed] = useState(false);
     const [showOptions, setShowOptions] = useState(false);
     const [optionCard, setOptionCard] = useState("");
     const [offerAmount, setOfferAmount] = useState("");
@@ -45,6 +46,16 @@ const Chat = ({ conversationId }) => {
                 }),
             };
         });
+    };
+
+    const markMessageFailed = (msgId) => {
+        queryClient.setQueryData(
+            ["chat_messages", conversationId],
+            (prev = []) =>
+                prev.map((m) =>
+                    (m.msgId ?? m.id) === msgId ? { ...m, failed: true } : m,
+                ),
+        );
     };
 
     // Sync an accepted/declined offer into the message list and the
@@ -90,9 +101,14 @@ const Chat = ({ conversationId }) => {
 
         const handleConnect = () => {
             setIsConnected(true);
+            setConnectionFailed(false);
             joinRoom();
         };
         const handleDisconnect = () => setIsConnected(false);
+        const handleConnectError = () => {
+            setIsConnected(false);
+            setConnectionFailed(true);
+        };
         const handleResponse = (data) => {
             if (data.conversationId && data.conversationId !== conversationId)
                 return;
@@ -100,6 +116,7 @@ const Chat = ({ conversationId }) => {
             // don't re-add it under the same key.
             if (data.status === "error") {
                 console.error("Message failed to send:", data);
+                markMessageFailed(data.msgId);
                 return;
             }
             addMessage(data);
@@ -112,6 +129,7 @@ const Chat = ({ conversationId }) => {
         };
 
         socket.on("connect", handleConnect);
+        socket.on("connect_error", handleConnectError);
         socket.on("disconnect", handleDisconnect);
         socket.on("response", handleResponse);
         socket.on("offerUpdate", handleOfferUpdate);
@@ -119,6 +137,7 @@ const Chat = ({ conversationId }) => {
         return () => {
             socket.emit("leave_room", conversationId);
             socket.off("connect", handleConnect);
+            socket.off("connect_error", handleConnectError);
             socket.off("disconnect", handleDisconnect);
             socket.off("response", handleResponse);
             socket.off("offerUpdate", handleOfferUpdate);
@@ -126,12 +145,18 @@ const Chat = ({ conversationId }) => {
     }, [conversationId]);
 
     useEffect(() => {
+        return () => {
+            socket.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages.length]);
 
     const sendMessage = (e) => {
         e.preventDefault();
-        if (!conversationId || !msgInput.trim()) return;
+        if (!conversationId || !msgInput.trim() || !user?.user_id) return;
 
         const newMessage = {
             msgId: crypto.randomUUID(),
@@ -147,7 +172,13 @@ const Chat = ({ conversationId }) => {
 
     const sendOffer = () => {
         const amount = Number(offerAmount);
-        if (!conversationId || !Number.isFinite(amount) || amount <= 0) return;
+        if (
+            !conversationId ||
+            !Number.isFinite(amount) ||
+            amount <= 0 ||
+            !user?.user_id
+        )
+            return;
 
         const newMessage = {
             msgId: crypto.randomUUID(),
@@ -170,12 +201,6 @@ const Chat = ({ conversationId }) => {
             msgId: msg.msgId ?? msg.id,
             status,
         });
-        applyOfferUpdate({
-            conversationId,
-            msgId: msg.msgId ?? msg.id,
-            offerStatus: status,
-            offerAmount: msg.offerAmount,
-        });
     };
 
     const renderOffer = (msg, isMe, key) => {
@@ -184,6 +209,7 @@ const Chat = ({ conversationId }) => {
             <div
                 key={key}
                 className={`offerBubble ${isMe ? "offer-sent" : "offer-received"}`}
+                style={msg.failed ? { opacity: 0.6 } : undefined}
             >
                 <div className="offerLabel">
                     {isMe ? "You made an offer" : "Offer for you"}
@@ -224,6 +250,17 @@ const Chat = ({ conversationId }) => {
                         ✕ Offer Declined
                     </div>
                 )}
+                {msg.failed && (
+                    <div
+                        style={{
+                            fontSize: "0.75rem",
+                            color: "#ef4444",
+                            marginTop: "4px",
+                        }}
+                    >
+                        Not delivered
+                    </div>
+                )}
             </div>
         );
     };
@@ -245,8 +282,20 @@ const Chat = ({ conversationId }) => {
                             <div
                                 key={msg.msgId ?? msg.id ?? i}
                                 className={`chatBubble ${isMe ? "bubble-sent" : "bubble-received"}`}
+                                style={msg.failed ? { opacity: 0.6 } : undefined}
                             >
                                 {msg.message}
+                                {msg.failed && (
+                                    <div
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            color: "#ef4444",
+                                            marginTop: "4px",
+                                        }}
+                                    >
+                                        Not delivered
+                                    </div>
+                                )}
                             </div>
                         );
                     })
@@ -343,7 +392,13 @@ const Chat = ({ conversationId }) => {
                 </button>
             </form>
 
-            {!isConnected && <p className="chatStatus">Connecting...</p>}
+            {!isConnected && (
+                <p className="chatStatus">
+                    {connectionFailed
+                        ? "Connection failed. Please refresh, or log in again."
+                        : "Connecting..."}
+                </p>
+            )}
         </>
     );
 };

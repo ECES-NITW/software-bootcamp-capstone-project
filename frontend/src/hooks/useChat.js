@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
 export const useProductConversation = (productId) => {
+    const queryClient = useQueryClient();
     return useQuery({
         queryKey: ["chat_conversation", productId],
         queryFn: async () => {
             const response = await api.get(`/chat/conversation/${productId}`);
+            queryClient.invalidateQueries({ queryKey: ["chat_conversations"] });
             return response.data;
         },
         enabled: Boolean(productId),

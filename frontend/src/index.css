@@ -1760,3 +1760,13 @@ h1, h2, h3, .navLogo {
   color: var(--primary-hover);
   text-decoration: underline;
 }
+
+.routeState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+}
