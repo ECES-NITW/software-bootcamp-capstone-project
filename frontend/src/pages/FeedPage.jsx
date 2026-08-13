@@ -61,7 +61,7 @@ function FeedPage() {
       <div className="feedHeader">
         <div>
           <h1 style={{ fontFamily: 'Lora, serif', fontSize: '2rem', fontWeight: 700 }}>
-            🎒 Browse Channel
+            🎒 Browse Items
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
             Browse books, calculators, and lab gear listed by students.
