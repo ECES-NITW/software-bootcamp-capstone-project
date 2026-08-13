@@ -34,7 +34,7 @@ function HomePage() {
             Post an Item
           </button>
           <button className="btn btn-secondary" onClick={() => navigate('/feed')}>
-            Market Place
+            Marketplace
           </button>
         </div>
       </section>

@@ -135,7 +135,7 @@ function Sidebar() {
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
 
         <NavLink to="/feed" style={{ display: 'flex', alignItems: 'center' }}>
-          <StoreIcon /> Market Place
+          <StoreIcon /> Marketplace
         </NavLink>
         
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>

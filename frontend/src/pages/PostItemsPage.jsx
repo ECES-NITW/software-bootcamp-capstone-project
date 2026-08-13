@@ -13,7 +13,14 @@ const CATEGORIES = [
     "Others",
 ];
 
-const CONDITIONS = ["New", "Like New", "Good", "Fair"];
+const CONDITIONS = [
+    "Brand New",
+    "New",
+    "Slightly Used",
+    "Good",
+    "Old",
+    "Needs Repair",
+];
 
 const LISTING_TYPES = [
     { value: "sell", label: "Sell" },
@@ -262,7 +269,7 @@ function PostItemPage() {
                     </div>
 
                     {isSelected("sell") && (
-                        <div className="typePanel">
+                        <div className="typePanel panel-sell">
                             <span className="typePanelTitle">Sell details</span>
                             <div className="formGroup" style={{ marginBottom: 0 }}>
                                 <label className="formLabel">Selling Price (₹) *</label>
@@ -279,7 +286,7 @@ function PostItemPage() {
                     )}
 
                     {isSelected("rent") && (
-                        <div className="typePanel">
+                        <div className="typePanel panel-rent">
                             <span className="typePanelTitle">Rent details</span>
                             <div
                                 style={{
@@ -315,7 +322,7 @@ function PostItemPage() {
                     )}
 
                     {isSelected("exchange") && (
-                        <div className="typePanel">
+                        <div className="typePanel panel-exchange">
                             <span className="typePanelTitle">Exchange details</span>
                             <div className="formGroup" style={{ marginBottom: 0 }}>
                                 <label className="formLabel">Preferred Trade Item(s) *</label>

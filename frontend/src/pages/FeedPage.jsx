@@ -125,13 +125,6 @@ function FeedPage() {
             >
               Swaps
             </button>
-            <button 
-              className="toggleTab disabled" 
-              disabled
-              style={{ padding: '8px 24px' }}
-            >
-              🔒 Buy (Sales)
-            </button>
           </div>
 
         </div>
