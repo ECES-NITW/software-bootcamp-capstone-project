@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProducts, useCreateProduct, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
+import { useProducts, useCreateProduct } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 
 const CATEGORIES = [
@@ -14,7 +14,14 @@ const CATEGORIES = [
   "Others"
 ];
 
-const CONDITIONS = ["New", "Like New", "Good", "Fair"];
+const CONDITIONS = [
+    "Brand New",
+    "New",
+    "Slightly Used",
+    "Good",
+    "Old",
+    "Needs Repair",
+];
 
 function LookingForPage() {
   const navigate = useNavigate();
@@ -163,38 +170,50 @@ function LookingForPage() {
           <p style={{ color: 'var(--text-muted)' }}>No student requests have been posted yet.</p>
         </div>
       ) : (
-        <div className="grid">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {requests.map(item => (
-            <div key={item._id} className="productCard">
-              <div className="cardImageWrapper">
-                <img className="cardImage" src={item.images?.[0]?.url || PLACEHOLDER_IMAGE} alt={item.title} />
-                <span className="cardBadge badge-swap" style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--primary)' }}>
-                  Looking For
-                </span>
-              </div>
-              <div className="cardBody">
-                <span className="cardCategory">{item.category}</span>
-                <h3 className="cardTitle" title={item.title}>{item.title}</h3>
-                <p className="cardDesc">{item.description}</p>
-                <div className="cardFooter" style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'stretch' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="cardPrice" style={{ fontSize: '1.05rem' }}>
-                      Budget: ₹{item.budget ?? item.price}
-                    </div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Wanted: {item.condition}
-                    </span>
-                  </div>
-                  {isLoggedIn && String(item.seller?._id ?? item.seller) !== String(user.user_id) && (
-                    <button 
-                      className="btn" 
-                      onClick={() => navigate('/chat', { state: { productId: item._id } })}
-                      style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
-                    >
-                      💬 Offer This Item
-                    </button>
-                  )}
+            <div key={item._id} className="glassCard" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '28px' }}>
+              <div style={{ flex: 1, minWidth: '260px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <span className="cardCategory">{item.category}</span>
+                  <span className="listingTypeTag" style={{ background: 'var(--primary)', color: '#fff' }}>
+                    Looking For
+                  </span>
                 </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '6px' }} title={item.title}>
+                  {item.title}
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>{item.description}</p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '28px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>
+                    BUDGET
+                  </div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    ₹{item.budget ?? item.price}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>
+                    WANTED
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+                    {item.condition}
+                  </div>
+                </div>
+
+                {isLoggedIn && String(item.seller?._id ?? item.seller) !== String(user.user_id) && (
+                  <button
+                    className="btn"
+                    onClick={() => navigate('/chat', { state: { productId: item._id } })}
+                    style={{ fontSize: '0.85rem', padding: '10px 18px', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
+                  >
+                    💬 Offer This Item
+                  </button>
+                )}
               </div>
             </div>
           ))}

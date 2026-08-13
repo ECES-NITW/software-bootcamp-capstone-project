@@ -6,6 +6,7 @@ function RegisterPage() {
     const navigate = useNavigate();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -13,8 +14,12 @@ function RegisterPage() {
     const handleRegister = async () => {
         setError("");
 
-        if (!name || !email || !password) {
+        if (!name || !email || !phoneNumber || !password) {
             setError("All fields are required.");
+            return;
+        }
+        if (!/^\d{10}$/.test(phoneNumber)) {
+            setError("Phone number must be 10 digits.");
             return;
         }
         if (password.length < 6) {
@@ -24,7 +29,7 @@ function RegisterPage() {
 
         setLoading(true);
         try {
-            await api.post(`/auth/register`, { userName: name, email, password });
+            await api.post(`/auth/register`, { userName: name, email, phoneNumber, password });
             navigate("/login");
         } catch (err) {
             setError(err.response?.data?.message || "Could not reach the server.");
@@ -58,6 +63,17 @@ function RegisterPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@student.nitw.ac.in"
+                    />
+                </label>
+
+                <label className="auth-field">
+                    <span>Phone Number</span>
+                    <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                        placeholder="10-digit phone number"
+                        maxLength={10}
                     />
                 </label>
 
