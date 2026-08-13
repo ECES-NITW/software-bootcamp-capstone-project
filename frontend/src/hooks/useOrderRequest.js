@@ -21,6 +21,7 @@ export const useCreateOrderRequest = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user_orders"] });
+            queryClient.invalidateQueries({ queryKey: ["received_orders"] });
         },
     });
 };

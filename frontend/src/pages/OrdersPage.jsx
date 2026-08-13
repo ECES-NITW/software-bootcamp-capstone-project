@@ -1,9 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { useUserOrders } from '../hooks/useCheckout';
-import { useUserProducts, listingPrice } from '../hooks/useProducts';
-import useUser from '../hooks/useUser';
+import { useUserOrders, useReceivedOrders } from '../hooks/useCheckout';
 
-const ORDER_TYPE_LABELS = { buy: 'Purchase', rent: 'Rental', exchange: 'Exchange' };
+const ORDER_TYPE_LABELS = { buy: 'Sell', rent: 'Rent', exchange: 'Exchange' };
 
 const rentalDays = (order) => {
   if (!order.rentalStartDate || !order.rentalEndDate) return null;
@@ -13,17 +10,24 @@ const rentalDays = (order) => {
   return days > 0 ? days : null;
 };
 
+const orderAmountLabel = (order) => {
+  if (order.orderType === 'exchange') return 'EXCHANGE';
+  return order.orderType === 'rent' ? 'RENTAL RATE' : order.agreedPrice != null ? 'AGREED PRICE' : 'PURCHASE PRICE';
+};
+
+const orderAmount = (order) => {
+  if (order.orderType === 'exchange') return order.swapProduct?.title ? `For ${order.swapProduct.title}` : 'Swap requested';
+  const amount = `₹${Number(order.totalAmount ?? 0).toFixed(2)}`;
+  return order.orderType === 'rent' ? `${amount} / week` : amount;
+};
+
 function OrdersPage() {
-  const navigate = useNavigate();
-  const { data: user } = useUser();
   const { data: orders, isLoading, isError } = useUserOrders();
   const {
-    data: myProducts,
-    isLoading: isProductsLoading,
-    isError: isProductsError,
-  } = useUserProducts(user?.user_id);
-
-  const soldProducts = myProducts?.filter((p) => p.status !== 'Available') ?? [];
+    data: receivedOrders,
+    isLoading: isReceivedOrdersLoading,
+    isError: isReceivedOrdersError,
+  } = useReceivedOrders();
 
   if (isLoading) {
     return (
@@ -97,10 +101,10 @@ function OrdersPage() {
 
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>
-                        TOTAL AMOUNT
+                        {orderAmountLabel(order)}
                       </div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        ₹{(order.totalAmount ?? 0).toFixed(2)}
+                        {orderAmount(order)}
                       </div>
                     </div>
 
@@ -126,36 +130,35 @@ function OrdersPage() {
           <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.3rem', fontWeight: 700, marginBottom: '16px' }}>
             As Seller
           </h2>
-          {isProductsLoading ? (
-            <p style={{ color: 'var(--text-muted)' }}>Loading your listings...</p>
-          ) : isProductsError ? (
+          {isReceivedOrdersLoading ? (
+            <p style={{ color: 'var(--text-muted)' }}>Loading received orders...</p>
+          ) : isReceivedOrdersError ? (
             <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1.5px dashed var(--border-color)', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Could Not Load Listings</h3>
               <p style={{ color: 'var(--text-muted)' }}>Something went wrong while fetching your listings. Please try again later.</p>
             </div>
-          ) : soldProducts.length > 0 ? (
+          ) : receivedOrders && receivedOrders.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {soldProducts.map((product) => (
+              {receivedOrders.map((order) => (
                 <div
-                  key={product._id}
+                  key={order._id}
                   className="glassCard"
-                  onClick={() => navigate(`/item/${product._id}`)}
-                  style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px', cursor: 'pointer' }}
+                  style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px' }}
                 >
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'var(--bg-secondary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', flexShrink: 0 }}>
-                      {product.images?.[0]?.url ? (
-                        <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {order.product?.images?.[0]?.url ? (
+                        <img src={order.product.images[0].url} alt={order.product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ fontSize: '1.5rem' }}>📦</span>
                       )}
                     </div>
                     <div>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '4px' }}>
-                        {product.title}
+                        {order.product?.title || 'Unknown Product'}
                       </h3>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        Listed: {new Date(product.createdAt).toLocaleDateString()}
+                        Type: {ORDER_TYPE_LABELS[order.orderType] || order.orderType}
                       </p>
                     </div>
                   </div>
@@ -163,16 +166,16 @@ function OrdersPage() {
                   <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>
-                        PRICE
+                        {orderAmountLabel(order)}
                       </div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        ₹{listingPrice(product)}
+                        {orderAmount(order)}
                       </div>
                     </div>
 
                     <div>
                       <span className="cardBadge" style={{ position: 'static', background: 'var(--bg-secondary)', color: 'var(--primary)', borderColor: 'var(--primary)', borderWidth: '1px', borderStyle: 'solid' }}>
-                        {product.status}
+                        {order.status}
                       </span>
                     </div>
                   </div>
@@ -186,7 +189,6 @@ function OrdersPage() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

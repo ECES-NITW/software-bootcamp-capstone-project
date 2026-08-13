@@ -24,3 +24,13 @@ export const useUserOrders = () => {
         }
     });
 };
+
+export const useReceivedOrders = () => {
+    return useQuery({
+        queryKey: ["received_orders"],
+        queryFn: async () => {
+            const response = await api.get("/orders/receivedorders");
+            return response.data.orders ?? [];
+        }
+    });
+};

@@ -67,8 +67,6 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
         );
     };
 
-    // Sync an accepted/declined offer into the message list and the
-    // conversation list (agreed price + last message preview).
     const applyOfferUpdate = (update) => {
         queryClient.setQueryData(
             ["chat_messages", update.conversationId],
@@ -264,8 +262,9 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
         });
     };
 
-    const sendOrderMessage = (orderType, orderId) => {
-        if (!conversationId || !orderId || !user?.user_id) return;
+    const sendOrderMessage = (order) => {
+        if (!conversationId || !order?._id || !user?.user_id) return;
+        const { _id: orderId, orderType, totalAmount } = order;
 
         const newMessage = {
             msgId: crypto.randomUUID(),
@@ -275,11 +274,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
             orderId,
             orderType,
             offerAmount:
-                orderType === "buy"
-                    ? product?.price
-                    : orderType === "rent"
-                      ? product?.rentPrice
-                      : 0,
+                orderType === "exchange" ? 0 : totalAmount ?? 0,
             message: REQUEST_LABELS[orderType],
         };
         socket.emit("message", newMessage);
@@ -293,7 +288,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
             {
                 onSuccess: (data) => {
                     if (data.order?._id && !data.duplicate) {
-                        sendOrderMessage(orderType, data.order._id);
+                        sendOrderMessage(data.order);
                     }
                 },
                 onSettled: () => {
@@ -310,7 +305,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
         if (sentOrderRequests.has(orderId)) return;
         if (messages.some((m) => String(m.orderId) === String(orderId))) return;
         sentOrderRequests.add(orderId);
-        sendOrderMessage(pendingRequest.orderType, orderId);
+        sendOrderMessage({ ...pendingRequest, _id: orderId });
     });
 
     const renderOffer = (msg, isMe, key) => {
@@ -528,13 +523,15 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
 
             {showOptions && optionCard !== "offer" && (
                 <div className="chatOptionsMenu">
-                    <button
-                        type="button"
-                        className="chatOptionItem"
-                        onClick={() => setOptionCard("offer")}
-                    >
-                        Make an offer
-                    </button>
+                    {product?.types?.includes("sell") && (
+                        <button
+                            type="button"
+                            className="chatOptionItem"
+                            onClick={() => setOptionCard("offer")}
+                        >
+                            Make an offer
+                        </button>
+                    )}
                     {role === "buyer" &&
                         product?.status === "Available" &&
                         (product?.types ?? []).map((orderTypeKey) => {

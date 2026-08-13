@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
+const Conversation = require("../models/Conversation");
 
 const createOrder = async (req, res) => {
   try {
@@ -65,8 +66,20 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const conversation =
+      orderType === "buy"
+        ? await Conversation.findOne({
+            productId: product._id,
+            buyerId: buyer,
+            sellerId: product.seller,
+            currentOffer: { $ne: null },
+          })
+            .sort({ updatedAt: -1 })
+            .select("currentOffer")
+        : null;
+
     const amountByOrderType = {
-      buy: product.price,
+      buy: conversation?.currentOffer ?? product.price,
       rent: product.rentPrice,
       exchange: 0,
     };
@@ -77,6 +90,7 @@ const createOrder = async (req, res) => {
       product: product._id,
       orderType,
       totalAmount: amountByOrderType[orderType] ?? 0,
+      agreedPrice: orderType === "buy" ? conversation?.currentOffer : undefined,
 
       rentalStartDate: orderType === "rent" ? rentalStartDate : undefined,
       rentalEndDate: orderType === "rent" ? rentalEndDate : undefined,
@@ -104,6 +118,7 @@ const getAllMyOrders = async (req, res) => {
     const orders = await Order.find({ buyer })
       .populate("product")
       .populate("seller", "userName email")
+      .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -178,6 +193,7 @@ const getReceivedOrders = async (req, res) => {
     const orders = await Order.find({ seller })
       .populate("buyer", "userName email profilePic")
       .populate("product")
+      .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({

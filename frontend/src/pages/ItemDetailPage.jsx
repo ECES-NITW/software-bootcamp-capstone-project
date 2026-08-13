@@ -58,7 +58,7 @@ function ItemDetailPage() {
             state: {
               productId: id,
               orderRequest: data.order?._id
-                ? { orderId: data.order._id, orderType }
+                ? { ...data.order, orderId: data.order._id }
                 : undefined,
             },
           });
