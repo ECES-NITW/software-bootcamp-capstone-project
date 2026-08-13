@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useUserOrders, useReceivedOrders } from '../hooks/useCheckout';
 
 const ORDER_TYPE_LABELS = { buy: 'Sell', rent: 'Rent', exchange: 'Exchange' };
@@ -22,6 +23,7 @@ const orderAmount = (order) => {
 };
 
 function OrdersPage() {
+  const navigate = useNavigate();
   const { data: orders, isLoading, isError } = useUserOrders();
   const {
     data: receivedOrders,
@@ -65,7 +67,7 @@ function OrdersPage() {
           ) : orders && orders.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {orders.map((order) => (
-                <div key={order._id} className="glassCard" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px' }}>
+                <div key={order._id} className="glassCard" onClick={() => order.product?._id && navigate(`/item/${order.product._id}`)} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px', cursor: order.product?._id ? 'pointer' : 'default' }}>
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'var(--bg-secondary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', flexShrink: 0 }}>
                       {order.product?.images?.[0]?.url ? (
@@ -143,7 +145,8 @@ function OrdersPage() {
                 <div
                   key={order._id}
                   className="glassCard"
-                  style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px' }}
+                  onClick={() => order.product?._id && navigate(`/item/${order.product._id}`)}
+                  style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '24px', cursor: order.product?._id ? 'pointer' : 'default' }}
                 >
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                     <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'var(--bg-secondary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', flexShrink: 0 }}>

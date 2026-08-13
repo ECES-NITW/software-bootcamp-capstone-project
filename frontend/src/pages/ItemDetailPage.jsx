@@ -282,9 +282,11 @@ function ItemDetailPage() {
                         </button>
                       ) : (
                         <>
-                          <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/checkout/${item._id}`)}>
-                            🔒 Secure Checkout
-                          </button>
+                          {item.status === "Available" && (
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/checkout/${item._id}`)}>
+                              🔒 Secure Checkout
+                            </button>
+                          )}
                           <button
                             className="btn"
                             style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
