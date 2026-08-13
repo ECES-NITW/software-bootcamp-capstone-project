@@ -8,6 +8,7 @@ function ChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const productId = location.state?.productId;
+    const orderRequest = location.state?.orderRequest;
     const { data: stateConversation } = useProductConversation(productId);
 
     const { data: conversationsData, isLoading, isError } = useConversations();
@@ -260,7 +261,16 @@ function ChatPage() {
                                     />
                                 )}
                             </div>
-                            <Chat conversationId={selectedConvId} />
+                            <Chat
+                                conversationId={selectedConvId}
+                                product={activeProduct}
+                                role={activeConv?.role}
+                                pendingRequest={
+                                    activeProduct?._id === productId
+                                        ? orderRequest
+                                        : undefined
+                                }
+                            />
                         </>
                     ) : (
                         <div

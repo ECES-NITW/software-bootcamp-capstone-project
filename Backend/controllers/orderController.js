@@ -51,6 +51,20 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const existingRequest = await Order.findOne({
+      buyer,
+      product: productId,
+      orderType,
+      status: "pending",
+    });
+    if (existingRequest) {
+      return res.status(409).json({
+        success: false,
+        message: "You already have a pending request for this product",
+        order: existingRequest,
+      });
+    }
+
     const amountByOrderType = {
       buy: product.price,
       rent: product.rentPrice,

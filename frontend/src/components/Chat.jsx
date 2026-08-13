@@ -3,8 +3,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../App";
 import useUser from "../hooks/useUser";
 import { useMessages } from "../hooks/useChat";
+import {
+    useCreateOrderRequest,
+    REQUEST_LABELS,
+    REQUEST_BUTTON_LABELS,
+} from "../hooks/useOrderRequest";
 
-const Chat = ({ conversationId }) => {
+const sentOrderRequests = new Set();
+
+const Chat = ({ conversationId, product, role, pendingRequest }) => {
     const queryClient = useQueryClient();
     const { data: user } = useUser();
     const { data: messages = [], isLoading } = useMessages(conversationId);
@@ -16,6 +23,8 @@ const Chat = ({ conversationId }) => {
     const [optionCard, setOptionCard] = useState("");
     const [offerAmount, setOfferAmount] = useState("");
     const bottomRef = useRef(null);
+
+    const requestMutation = useCreateOrderRequest();
 
     const addMessage = (msg) => {
         queryClient.setQueryData(
@@ -92,6 +101,39 @@ const Chat = ({ conversationId }) => {
         });
     };
 
+    const applyOrderUpdate = (update) => {
+        queryClient.setQueryData(
+            ["chat_messages", update.conversationId],
+            (prev = []) =>
+                prev.map((m) =>
+                    (m.msgId ?? m.id) === update.msgId
+                        ? { ...m, offerStatus: update.offerStatus }
+                        : m,
+                ),
+        );
+        queryClient.setQueryData(["chat_conversations"], (prev) => {
+            if (!prev) return prev;
+            const label = REQUEST_LABELS[update.orderType] || "Request";
+            return {
+                ...prev,
+                conversations: prev.conversations.map((conv) =>
+                    conv._id === update.conversationId
+                        ? { ...conv, lastMessage: `${label} ${update.offerStatus}` }
+                        : conv,
+                ),
+            };
+        });
+        queryClient.invalidateQueries({ queryKey: ["user_orders"] });
+        if (update.offerStatus === "accepted") {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            if (product?._id) {
+                queryClient.invalidateQueries({
+                    queryKey: ["product", product._id],
+                });
+            }
+        }
+    };
+
     useEffect(() => {
         if (!conversationId) return;
         if (!socket.connected) socket.connect();
@@ -127,12 +169,22 @@ const Chat = ({ conversationId }) => {
             if (data.status === "error") return;
             applyOfferUpdate(data);
         };
+        const handleOrderUpdate = (data) => {
+            if (data.conversationId && data.conversationId !== conversationId)
+                return;
+            if (data.status === "error") {
+                window.alert(data.error || "Could not update the request");
+                return;
+            }
+            applyOrderUpdate(data);
+        };
 
         socket.on("connect", handleConnect);
         socket.on("connect_error", handleConnectError);
         socket.on("disconnect", handleDisconnect);
         socket.on("response", handleResponse);
         socket.on("offerUpdate", handleOfferUpdate);
+        socket.on("orderUpdate", handleOrderUpdate);
 
         return () => {
             socket.emit("leave_room", conversationId);
@@ -141,6 +193,7 @@ const Chat = ({ conversationId }) => {
             socket.off("disconnect", handleDisconnect);
             socket.off("response", handleResponse);
             socket.off("offerUpdate", handleOfferUpdate);
+            socket.off("orderUpdate", handleOrderUpdate);
         };
     }, [conversationId]);
 
@@ -202,6 +255,63 @@ const Chat = ({ conversationId }) => {
             status,
         });
     };
+
+    const respondToOrder = (msg, status) => {
+        socket.emit("order_update", {
+            conversationId,
+            msgId: msg.msgId ?? msg.id,
+            status,
+        });
+    };
+
+    const sendOrderMessage = (orderType, orderId) => {
+        if (!conversationId || !orderId || !user?.user_id) return;
+
+        const newMessage = {
+            msgId: crypto.randomUUID(),
+            conversationId,
+            sender: user.user_id,
+            type: "order",
+            orderId,
+            orderType,
+            offerAmount:
+                orderType === "buy"
+                    ? product?.price
+                    : orderType === "rent"
+                      ? product?.rentPrice
+                      : 0,
+            message: REQUEST_LABELS[orderType],
+        };
+        socket.emit("message", newMessage);
+        addMessage(newMessage);
+    };
+
+    const sendOrderRequest = (orderType) => {
+        if (!product?._id || !user?.user_id) return;
+        requestMutation.mutate(
+            { productId: product._id, orderType },
+            {
+                onSuccess: (data) => {
+                    if (data.order?._id && !data.duplicate) {
+                        sendOrderMessage(orderType, data.order._id);
+                    }
+                },
+                onSettled: () => {
+                    setShowOptions(false);
+                    setOptionCard("");
+                },
+            },
+        );
+    };
+
+    useEffect(() => {
+        const orderId = pendingRequest?.orderId;
+        if (!orderId || !conversationId || !user?.user_id || isLoading) return;
+        if (sentOrderRequests.has(orderId)) return;
+        if (messages.some((m) => String(m.orderId) === String(orderId))) return;
+        sentOrderRequests.add(orderId);
+        sendOrderMessage(pendingRequest.orderType, orderId);
+    });
 
     const renderOffer = (msg, isMe, key) => {
         const status = msg.offerStatus ?? "none";
@@ -265,6 +375,73 @@ const Chat = ({ conversationId }) => {
         );
     };
 
+    const renderOrderRequest = (msg, isMe, key) => {
+        const status = msg.offerStatus ?? "none";
+        const label = REQUEST_LABELS[msg.orderType] || "Request";
+        return (
+            <div
+                key={key}
+                className={`offerBubble ${isMe ? "offer-sent" : "offer-received"}`}
+                style={msg.failed ? { opacity: 0.6 } : undefined}
+            >
+                <div className="offerLabel">
+                    {isMe ? `You sent a ${label.toLowerCase()}` : `${label} for you`}
+                </div>
+                <div className="offerAmount">
+                    {msg.orderType === "exchange"
+                        ? "Open to swap"
+                        : `₹${msg.offerAmount}`}
+                </div>
+
+                {status === "none" && !isMe && (
+                    <div className="offerActions">
+                        <button
+                            type="button"
+                            className="offerBtn offerBtn-accept"
+                            onClick={() => respondToOrder(msg, "accepted")}
+                        >
+                            ✓ Accept
+                        </button>
+                        <button
+                            type="button"
+                            className="offerBtn offerBtn-decline"
+                            onClick={() => respondToOrder(msg, "declined")}
+                        >
+                            ✕ Decline
+                        </button>
+                    </div>
+                )}
+
+                {status === "none" && isMe && (
+                    <div className="offerStatusBar offer-pending">
+                        Awaiting response…
+                    </div>
+                )}
+                {status === "accepted" && (
+                    <div className="offerStatusBar offer-accepted">
+                        ✓ Request Accepted
+                    </div>
+                )}
+                {status === "declined" && (
+                    <div className="offerStatusBar offer-declined">
+                        ✕ Request Declined
+                    </div>
+                )}
+                {msg.failed && (
+                    <div
+                        style={{
+                            fontSize: "0.75rem",
+                            color: "#ef4444",
+                            marginTop: "4px",
+                        }}
+                    >
+                        Not delivered
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <>
             <div className="chatMessages">
@@ -275,6 +452,9 @@ const Chat = ({ conversationId }) => {
                 ) : (
                     messages.map((msg, i) => {
                         const isMe = String(msg.sender) === String(user?.user_id);
+                        if (msg.type === "order") {
+                            return renderOrderRequest(msg, isMe, msg.msgId ?? msg.id ?? i);
+                        }
                         if (msg.type === "offer") {
                             return renderOffer(msg, isMe, msg.msgId ?? msg.id ?? i);
                         }
@@ -355,6 +535,26 @@ const Chat = ({ conversationId }) => {
                     >
                         Make an offer
                     </button>
+                    {role === "buyer" &&
+                        product?.status === "Available" &&
+                        (product?.types ?? []).map((orderTypeKey) => {
+                            const orderType =
+                                orderTypeKey === "sell" ? "buy" : orderTypeKey;
+                            if (!REQUEST_BUTTON_LABELS[orderType]) return null;
+                            return (
+                                <button
+                                    key={orderType}
+                                    type="button"
+                                    className="chatOptionItem"
+                                    onClick={() => sendOrderRequest(orderType)}
+                                    disabled={requestMutation.isPending}
+                                >
+                                    {requestMutation.isPending
+                                        ? "Sending request..."
+                                        : REQUEST_BUTTON_LABELS[orderType]}
+                                </button>
+                            );
+                        })}
                 </div>
             )}
 

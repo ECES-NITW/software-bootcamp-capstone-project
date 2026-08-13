@@ -1,6 +1,13 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const Product = require("../models/Product");
+const Order = require("../models/Order");
+
+const REQUEST_LABELS = {
+  buy: "Purchase request",
+  rent: "Rental request",
+  exchange: "Swap request",
+};
 
 const getProductConversation = async (req, res) => {
   try {
@@ -93,7 +100,36 @@ const getMessages = async (req, res) => {
 
 const addMessage = async (messageData) => {
   const conversationId = messageData.conversationId;
-  const type = messageData.type === "offer" ? "offer" : "text";
+  const type = ["offer", "order"].includes(messageData.type)
+    ? messageData.type
+    : "text";
+
+  if (type === "order") {
+    const orderType = messageData.orderType;
+    if (!REQUEST_LABELS[orderType]) {
+      throw new Error("Invalid order type");
+    }
+    if (!messageData.orderId) {
+      throw new Error("orderId is required for order requests");
+    }
+
+    const label = REQUEST_LABELS[orderType];
+    await Message.create({
+      msgId: messageData.msgId,
+      conversationId,
+      sender: messageData.sender,
+      type,
+      message: messageData.message || label,
+      orderId: messageData.orderId,
+      orderType,
+      offerAmount: Number(messageData.offerAmount) || 0,
+      offerStatus: "none",
+    });
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: label,
+    });
+    return;
+  }
 
   if (type === "offer") {
     const amount = Number(messageData.offerAmount);
@@ -164,6 +200,55 @@ const updateOfferStatus = async ({ msgId, conversationId, status, userId }) => {
   );
 
   return message;
+};
+
+const updateOrderStatus = async ({ msgId, conversationId, status, userId }) => {
+  if (!["accepted", "declined"].includes(status)) {
+    throw new Error("Invalid request status");
+  }
+
+  const message = await Message.findOne({ msgId, conversationId });
+  if (!message || message.type !== "order") {
+    throw new Error("Request not found");
+  }
+  if (message.offerStatus !== "none") {
+    throw new Error("Request has already been resolved");
+  }
+
+  const order = await Order.findById(message.orderId);
+  if (!order) {
+    throw new Error("Order not found");
+  }
+  if (String(order.seller) !== String(userId)) {
+    throw new Error("Only the seller can respond to this request");
+  }
+  if (order.status !== "pending") {
+    throw new Error("Order is no longer pending");
+  }
+
+  if (status === "accepted") {
+    const product = await Product.findById(order.product);
+    if (!product || product.status !== "Available") {
+      throw new Error("Product is no longer available");
+    }
+    order.status = "accepted";
+    await Product.findByIdAndUpdate(order.product, {
+      status: order.orderType === "rent" ? "Reserved" : "Sold",
+    });
+  } else {
+    order.status = "rejected";
+  }
+
+  message.offerStatus = status;
+  await message.save();
+  await order.save();
+
+  const label = REQUEST_LABELS[order.orderType] || "Request";
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: `${label} ${status}`,
+  });
+
+  return { message, order };
 };
 
 const getAgreedPrice = async (req, res) => {
@@ -237,6 +322,7 @@ module.exports = {
   getMessages,
   addMessage,
   updateOfferStatus,
+  updateOrderStatus,
   getAgreedPrice,
   getConversations,
 };
