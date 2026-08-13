@@ -517,6 +517,33 @@ h1, h2, h3, .navLogo {
   color: var(--text-muted);
 }
 
+.typePanel.panel-sell {
+  border-color: rgba(46, 139, 87, 0.45);
+  box-shadow: 0 0 0 1px rgba(46, 139, 87, 0.12);
+}
+
+.typePanel.panel-sell .typePanelTitle {
+  color: var(--accent-buy);
+}
+
+.typePanel.panel-rent {
+  border-color: rgba(70, 130, 180, 0.45);
+  box-shadow: 0 0 0 1px rgba(70, 130, 180, 0.12);
+}
+
+.typePanel.panel-rent .typePanelTitle {
+  color: var(--accent-rent);
+}
+
+.typePanel.panel-exchange {
+  border-color: rgba(200, 122, 83, 0.5);
+  box-shadow: 0 0 0 1px rgba(200, 122, 83, 0.12);
+}
+
+.typePanel.panel-exchange .typePanelTitle {
+  color: var(--accent-swap);
+}
+
 .imagePreviewGrid {
   display: flex;
   flex-wrap: wrap;

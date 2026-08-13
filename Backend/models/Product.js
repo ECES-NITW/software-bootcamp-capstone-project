@@ -81,7 +81,14 @@ const productSchema = new mongoose.Schema(
     condition: {
       type: String,
       required: true,
-      enum: ["New", "Like New", "Good", "Fair"],
+      enum: [
+        "Brand New",
+        "New",
+        "Slightly Used",
+        "Good",
+        "Old",
+        "Needs Repair",
+      ],
     },
 
     images: [

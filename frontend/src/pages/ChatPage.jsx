@@ -34,7 +34,12 @@ function ChatPage() {
     const getContactInfo = (conv) =>
         conv.role === "buyer" ? conv.seller : conv.buyer;
 
-    const shown = conversations?.filter((c) => c.role === view) ?? [];
+    const shown =
+        conversations?.filter(
+            (c) =>
+                c.role === view &&
+                (c.lastMessage || c._id === selectedConvId),
+        ) ?? [];
     const activeConv = conversations?.find((c) => c._id === selectedConvId);
     const activeOther = activeConv && getContactInfo(activeConv);
     const activeProduct = activeConv?.product;
