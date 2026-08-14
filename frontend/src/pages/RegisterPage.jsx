@@ -3,17 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
 
 function RegisterPage() {
-<<<<<<< HEAD
   const navigate = useNavigate();
-=======
-    const navigate = useNavigate();
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
->>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,7 +12,6 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-<<<<<<< HEAD
   const handleRegister = async () => {
     setError("");
 
@@ -30,32 +19,6 @@ function RegisterPage() {
       setError("All fields are required.");
       return;
     }
-=======
-        if (!name || !email || !phoneNumber || !password) {
-            setError("All fields are required.");
-            return;
-        }
-        if (!/^\d{10}$/.test(phoneNumber)) {
-            setError("Phone number must be 10 digits.");
-            return;
-        }
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            await api.post(`/auth/register`, { userName: name, email, phoneNumber, password });
-            navigate("/login");
-        } catch (err) {
-            setError(err.response?.data?.message || "Could not reach the server.");
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
->>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
@@ -77,7 +40,6 @@ function RegisterPage() {
         password,
       });
 
-<<<<<<< HEAD
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Could not reach the server.");
@@ -86,29 +48,6 @@ function RegisterPage() {
       setLoading(false);
     }
   };
-=======
-                <label className="auth-field">
-                    <span>Phone Number</span>
-                    <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                        placeholder="10-digit phone number"
-                        maxLength={10}
-                    />
-                </label>
-
-                <label className="auth-field">
-                    <span>Password</span>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="At least 6 characters"
-                        onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    />
-                </label>
->>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 
   return (
     <div className="auth-page">
