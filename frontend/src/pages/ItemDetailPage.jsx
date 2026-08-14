@@ -20,7 +20,9 @@ function ItemDetailPage() {
   const isLoggedIn = Boolean(user);
 
   const { data: item, isLoading, isError } = useProduct(id);
+
   const sellerId = item?.seller?._id ?? item?.seller;
+
   const { data: contactInfo } = useProfile(sellerId);
 
   const isOwnProduct = Boolean(
@@ -30,10 +32,13 @@ function ItemDetailPage() {
   const deleteMutation = useDeleteProduct();
 
   const { data: wishlistIds } = useWishlistIds();
+
   const toggleWishlistMutation = useToggleWishlist();
+
   const isWishlisted = Boolean(wishlistIds?.includes(String(id)));
 
   const { data: agreedPrice } = useAgreedPrice(id);
+
   const hasAgreedPrice = isLoggedIn && agreedPrice != null;
 
   const handleDelete = () => {
@@ -42,6 +47,7 @@ function ItemDetailPage() {
         onSuccess: () => {
           navigate("/feed");
         },
+
         onError: (err) => {
           alert(
             "Failed to delete listing: " +
@@ -53,16 +59,57 @@ function ItemDetailPage() {
   };
 
   const handleStartChat = () => {
-    navigate("/chat", { state: { productId: id } });
+    if (canExchange) {
+      alert("Exchange request placed! Waiting for the seller to accept.");
+    }
+
+    navigate("/chat", {
+      state: {
+        productId: id,
+      },
+    });
   };
 
+  const handleBuy = () => {
+    if (item.status !== "Available") {
+      return;
+    }
+
+    navigate(`/checkout/${item._id}?type=buy`);
+  };
+
+  const handleRent = () => {
+    if (item.status !== "Available") {
+      return;
+    }
+
+    navigate(`/checkout/${item._id}?type=rent`);
+  };
+
+  //   const handleRentRequest = () => {
+  //   alert(
+  //     "Rental order placed! Waiting for the seller to accept."
+  //   );
+
+  //   navigate("/chat", {
+  //     state: {
+  //       productId: id,
+  //       rentalRequest: true,
+  //     },
+  //   });
+  // };
   if (isLoading) {
     return (
       <div
-        style={{ display: "flex", justifyContent: "center", padding: "64px" }}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "64px",
+        }}
       >
         <div className="statusIndicator">
           <span className="statusDot statusDot-active"></span>
+
           <span>Loading item details...</span>
         </div>
       </div>
@@ -79,12 +126,19 @@ function ItemDetailPage() {
           border: "1px dashed #ef4444",
         }}
       >
-        <p style={{ color: "#fca5a5" }}>
+        <p
+          style={{
+            color: "#fca5a5",
+          }}
+        >
           Item not found or failed to retrieve details.
         </p>
+
         <button
           className="btn"
-          style={{ marginTop: "16px" }}
+          style={{
+            marginTop: "16px",
+          }}
           onClick={() => navigate("/")}
         >
           Back to Home
@@ -94,20 +148,32 @@ function ItemDetailPage() {
   }
 
   const images = item.images ?? [];
+
   const image = images[activeImage]?.url ?? images[0]?.url;
 
   const types = item.types ?? [];
+
   const canSell = types.includes("sell");
+
   const canRent = types.includes("rent");
+
   const canExchange = types.includes("exchange");
+
   const sellerName = contactInfo?.userName ?? "Seller";
+
   const sellerInitials =
     (isOwnProduct ? user?.userName : sellerName)
       ?.substring(0, 2)
       .toUpperCase() ?? "??";
 
   return (
-    <div style={{ animation: "fadeInUp 0.4s ease-out" }}>
+    <div
+      style={{
+        animation: "fadeInUp 0.4s ease-out",
+      }}
+    >
+      {/* BACK BUTTON */}
+
       <button className="detailBackBtn" onClick={() => navigate(-1)}>
         ← Back to listings
       </button>
@@ -123,6 +189,7 @@ function ItemDetailPage() {
                     alt={item.title}
                     className="detailImage"
                   />
+
                   {item.condition && (
                     <span className="cardBadge badge-rent">
                       {item.condition}
@@ -137,26 +204,39 @@ function ItemDetailPage() {
                         key={img.public_id ?? index}
                         src={img.url}
                         alt={`${item.title} ${index + 1}`}
-                        className={`detailThumb ${index === activeImage ? "active" : ""}`}
+                        className={`detailThumb ${
+                          index === activeImage ? "active" : ""
+                        }`}
                         onClick={() => setActiveImage(index)}
                       />
                     ))}
                   </div>
                 )}
               </div>
-
               <div className="detailInfo">
                 <div>
-                  <div className="detailTags" style={{ flexWrap: "wrap" }}>
+                  <div
+                    className="detailTags"
+                    style={{
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span className="statusIndicator">
                       <span className="statusDot statusDot-active"></span>
+
                       {item.category}
                     </span>
+
                     {item.status && (
                       <span className="statusIndicator">
                         <span
-                          className={`statusDot ${item.status === "Available" ? "statusDot-active" : "statusDot-pending"}`}
+                          className={`statusDot ${
+                            item.status === "Available"
+                              ? "statusDot-active"
+                              : "statusDot-pending"
+                          }`}
                         ></span>
+
                         {item.status}
                       </span>
                     )}
@@ -165,12 +245,16 @@ function ItemDetailPage() {
                   <h1 className="detailTitle">{item.title}</h1>
                 </div>
 
+                {/* SELLER */}
+
                 <div className="detailSellerCard">
                   <div className="detailSellerAvatar">{sellerInitials}</div>
+
                   <div>
                     <div className="detailSellerName">
                       {isOwnProduct ? "You" : sellerName}
                     </div>
+
                     <div className="detailSellerMeta">
                       {item.location ? (
                         <>📍 {item.location}</>
@@ -183,9 +267,9 @@ function ItemDetailPage() {
 
                 <div className="detailDescription">
                   <h3>Description</h3>
+
                   <p>{item.description}</p>
                 </div>
-
                 <div className="detailPriceSection">
                   <div className="detailPriceRows">
                     {canSell && (
@@ -193,6 +277,7 @@ function ItemDetailPage() {
                         <div className="detailPriceLabel">
                           {hasAgreedPrice ? "Agreed Price" : "Price"}
                         </div>
+
                         <div
                           style={{
                             display: "flex",
@@ -211,10 +296,15 @@ function ItemDetailPage() {
                               ₹{item.price}
                             </span>
                           )}
+
                           <div
                             className="detailPriceValue"
                             style={
-                              hasAgreedPrice ? { color: "#2e8b57" } : undefined
+                              hasAgreedPrice
+                                ? {
+                                    color: "#2e8b57",
+                                  }
+                                : undefined
                             }
                           >
                             ₹{hasAgreedPrice ? agreedPrice : item.price}
@@ -226,19 +316,22 @@ function ItemDetailPage() {
                     {!canSell && hasAgreedPrice && (
                       <div className="detailPriceRow">
                         <div className="detailPriceLabel">Agreed Price</div>
+
                         <div
                           className="detailPriceValue"
-                          style={{ color: "#2e8b57" }}
+                          style={{
+                            color: "#2e8b57",
+                          }}
                         >
                           ₹{agreedPrice}
                         </div>
                       </div>
                     )}
-
                     {canRent && (
                       <div className="detailPriceRow">
                         <div>
                           <div className="detailPriceLabel">Rent</div>
+
                           {item.deposit > 0 && (
                             <div
                               style={{
@@ -251,6 +344,7 @@ function ItemDetailPage() {
                             </div>
                           )}
                         </div>
+
                         <div className="detailPriceValue">
                           ₹{item.rentPrice}
                           <span
@@ -266,11 +360,11 @@ function ItemDetailPage() {
                         </div>
                       </div>
                     )}
-
                     {canExchange && (
                       <div className="detailPriceRow">
                         <div>
                           <div className="detailPriceLabel">Exchange</div>
+
                           {item.exchangePreferences && (
                             <div
                               style={{
@@ -283,22 +377,22 @@ function ItemDetailPage() {
                             </div>
                           )}
                         </div>
+
                         <span className="listingTypeTag tag-exchange">
                           Open to swaps
                         </span>
                       </div>
                     )}
-
                     {!canSell && !canRent && !canExchange && (
                       <div className="detailPriceRow">
                         <div className="detailPriceLabel">Budget</div>
+
                         <div className="detailPriceValue">
                           ₹{listingPrice(item)}
                         </div>
                       </div>
                     )}
                   </div>
-
                   {isLoggedIn ? (
                     <div
                       style={{
@@ -325,13 +419,58 @@ function ItemDetailPage() {
                         </button>
                       ) : (
                         <>
-                          <button
-                            className="btn btn-primary"
-                            style={{ width: "100%" }}
-                            onClick={() => navigate(`/checkout/${item._id}`)}
-                          >
-                            🔒 Secure Checkout
-                          </button>
+                          {canSell && (
+                            <button
+                              className="btn btn-primary"
+                              style={{
+                                width: "100%",
+                                opacity: item.status === "Available" ? 1 : 0.5,
+                                cursor:
+                                  item.status === "Available"
+                                    ? "pointer"
+                                    : "not-allowed",
+                              }}
+                              disabled={item.status !== "Available"}
+                              onClick={handleBuy}
+                            >
+                              {item.status === "Available"
+                                ? "🔒 Buy Securely"
+                                : "🔒 Item Reserved"}
+                            </button>
+                          )}
+                          {canRent && (
+                            <button
+                              className="btn btn-primary"
+                              style={{
+                                width: "100%",
+                                opacity: item.status === "Available" ? 1 : 0.5,
+                                cursor:
+                                  item.status === "Available"
+                                    ? "pointer"
+                                    : "not-allowed",
+                              }}
+                              disabled={item.status !== "Available"}
+                              onClick={handleRent}
+                            >
+                              {item.status === "Available"
+                                ? "🔒 Rent Securely"
+                                : "🔒 Item Reserved"}
+                            </button>
+                          )}
+                          {canExchange && (
+                            <button
+                              className="btn"
+                              style={{
+                                width: "100%",
+                                background: "var(--bg-secondary)",
+                                border: "1.5px solid var(--border-color)",
+                                color: "var(--primary)",
+                              }}
+                              onClick={handleStartChat}
+                            >
+                              🔄 Request Exchange
+                            </button>
+                          )}
                           <button
                             className="btn"
                             style={{
@@ -344,6 +483,7 @@ function ItemDetailPage() {
                           >
                             💬 Chat
                           </button>
+
                           <button
                             className="btn"
                             style={{
@@ -351,7 +491,9 @@ function ItemDetailPage() {
                               background: isWishlisted
                                 ? "rgba(220, 38, 38, 0.08)"
                                 : "var(--bg-secondary)",
-                              border: `1.5px solid ${isWishlisted ? "#dc2626" : "var(--border-color)"}`,
+                              border: `1.5px solid ${
+                                isWishlisted ? "#dc2626" : "var(--border-color)"
+                              }`,
                               color: isWishlisted
                                 ? "#dc2626"
                                 : "var(--primary)",

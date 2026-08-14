@@ -3,85 +3,115 @@ import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
 
 function RegisterPage() {
-    const navigate = useNavigate();
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const handleRegister = async () => {
-        setError("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-        if (!name || !email || !password) {
-            setError("All fields are required.");
-            return;
-        }
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
-            return;
-        }
+  const handleRegister = async () => {
+    setError("");
 
-        setLoading(true);
-        try {
-            await api.post(`/auth/register`, { userName: name, email, password });
-            navigate("/login");
-        } catch (err) {
-            setError(err.response?.data?.message || "Could not reach the server.");
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    if (!name || !email || !phoneNumber || !password) {
+      setError("All fields are required.");
+      return;
+    }
 
-    return (
-        <div className="auth-page">
-            <div className="auth-card">
-                <h1 className="auth-title">Create account</h1>
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
-                {error && <p className="auth-error">{error}</p>}
+    if (!/^[0-9]{10}$/.test(phoneNumber)) {
+      setError("Phone number must be 10 digits.");
+      return;
+    }
 
-                <label className="auth-field">
-                    <span>Name</span>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your name"
-                    />
-                </label>
+    setLoading(true);
 
-                <label className="auth-field">
-                    <span>Email</span>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@student.nitw.ac.in"
-                    />
-                </label>
+    try {
+      await api.post(`/auth/register`, {
+        userName: name,
+        email,
+        phoneNumber,
+        password,
+      });
 
-                <label className="auth-field">
-                    <span>Password</span>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="At least 6 characters"
-                        onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-                    />
-                </label>
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not reach the server.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                <button className="auth-btn" onClick={handleRegister} disabled={loading}>
-                    {loading ? "Creating account..." : "Create account"}
-                </button>
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1 className="auth-title">Create account</h1>
 
-                <p className="auth-switch">
-                    Already have an account? <Link to="/login">Sign in</Link>
-                </p>
-            </div>
-        </div>
-    );
+        {error && <p className="auth-error">{error}</p>}
+
+        <label className="auth-field">
+          <span>Name</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+          />
+        </label>
+
+        <label className="auth-field">
+          <span>Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@student.nitw.ac.in"
+          />
+        </label>
+
+        <label className="auth-field">
+          <span>Phone Number</span>
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="10-digit phone number"
+            maxLength={10}
+          />
+        </label>
+
+        <label className="auth-field">
+          <span>Password</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 6 characters"
+            onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+          />
+        </label>
+
+        <button
+          className="auth-btn"
+          onClick={handleRegister}
+          disabled={loading}
+        >
+          {loading ? "Creating account..." : "Create account"}
+        </button>
+
+        <p className="auth-switch">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default RegisterPage;
