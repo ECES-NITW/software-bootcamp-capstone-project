@@ -8,11 +8,7 @@ function WishlistPage() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("recent");
 
-  const { data: items, isLoading, isError } = useProducts({
-    category,
-    search,
-    sort,
-  });
+  const { data: items, isLoading, isError } = useProducts({ sort });
 
   const {
     data: wishlistIds,
@@ -21,7 +17,17 @@ function WishlistPage() {
   } = useWishlistIds();
 
   const wishlistedItems =
-    items?.filter((p) => wishlistIds?.includes(String(p._id))) ?? [];
+    items
+      ?.filter((p) => wishlistIds?.includes(String(p._id)))
+      .filter((p) => {
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return (
+          p.title?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q)
+        );
+      })
+      .filter((p) => category === "All" || p.category === category) ?? [];
 
   const categories = ["All", "Electronics", "Books", "Furniture", "Clothing", "Sports", "Accessories", "Stationery", "Others"];
 

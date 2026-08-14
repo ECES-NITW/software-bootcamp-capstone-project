@@ -1,3 +1,4 @@
+const fs = require("fs");
 const Product = require("../models/Product");
 const cloudinary = require("../config/cloudinary");
 
@@ -20,7 +21,6 @@ const createProduct = async (req, res) => {
       category,
       condition,
       location,
-      status,
     } = req.body;
 
     const types = toArray(req.body.types);
@@ -29,14 +29,18 @@ const createProduct = async (req, res) => {
     const imageData = [];
 
     for (const file of req.files ?? []) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: "campus-marketplace/products",
-      });
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "campus-marketplace/products",
+        });
 
-      imageData.push({
-        url: result.secure_url,
-        public_id: result.public_id,
-      });
+        imageData.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+        });
+      } finally {
+        fs.unlink(file.path, () => {});
+      }
     }
 
     // Create Product
@@ -54,7 +58,6 @@ const createProduct = async (req, res) => {
       category,
       condition,
       location,
-      status,
       images: imageData,
       seller: req.user.id,
     });
@@ -62,7 +65,7 @@ const createProduct = async (req, res) => {
     // Populate seller details
     const populatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     return res.status(201).json({
@@ -106,7 +109,11 @@ const getProducts = async (req, res) => {
     }
     // Search
     if (search) {
-      filter.$text = { $search: search };
+      const pattern = String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.$or = [
+        { title: { $regex: pattern, $options: "i" } },
+        { description: { $regex: pattern, $options: "i" } },
+      ];
     }
 
     const requestedTypes = toArray(req.query.types);
@@ -163,15 +170,15 @@ const getProducts = async (req, res) => {
         break;
     }
 
-    const currentPage = Number(page);
-    const pageLimit = Number(limit);
+    const currentPage = Math.max(1, Math.floor(Number(page)) || 1);
+    const pageLimit = Math.min(200, Math.max(1, Math.floor(Number(limit)) || 10));
 
     const skip = (currentPage - 1) * pageLimit;
 
     const totalProducts = await Product.countDocuments(filter);
 
     const products = await Product.find(filter)
-      .populate("seller", "name email")
+      .populate("seller", "userName email")
       .sort(sortOption)
       .skip(skip)
       .limit(pageLimit);
@@ -237,7 +244,7 @@ const getMyProducts = async (req, res) => {
     const products = await Product.find({
       seller: req.user.id,
     })
-      .populate("seller", "name email")
+      .populate("seller", "userName email")
       .sort({ createdAt: -1 });
 
     console.log(
@@ -270,7 +277,7 @@ const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     if (!product) {
@@ -315,26 +322,35 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // If new images are uploaded then delete old images and upload new images
+    // If new images are uploaded then upload new images and delete old images
     if (req.files && req.files.length > 0) {
-      for (const image of product.images) {
-        await cloudinary.uploader.destroy(image.public_id);
-      }
-
       const imageData = [];
 
       for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "campus-marketplace/products",
-        });
+        try {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "campus-marketplace/products",
+          });
 
-        imageData.push({
-          url: result.secure_url,
-          public_id: result.public_id,
-        });
+          imageData.push({
+            url: result.secure_url,
+            public_id: result.public_id,
+          });
+        } finally {
+          fs.unlink(file.path, () => {});
+        }
       }
 
+      const oldImages = product.images;
       product.images = imageData;
+
+      for (const image of oldImages) {
+        try {
+          await cloudinary.uploader.destroy(image.public_id);
+        } catch (err) {
+          console.error("Failed to delete old image", image.public_id, err);
+        }
+      }
     }
 
     if (req.body.types !== undefined) {
@@ -347,7 +363,6 @@ const updateProduct = async (req, res) => {
     product.category = req.body.category || product.category;
     product.condition = req.body.condition || product.condition;
     product.location = req.body.location || product.location;
-    product.status = req.body.status || product.status;
 
     const typeFields = [
       { field: "price", type: "sell", value: toNumber(req.body.price) },
@@ -377,7 +392,7 @@ const updateProduct = async (req, res) => {
 
     const updatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     return res.status(200).json({

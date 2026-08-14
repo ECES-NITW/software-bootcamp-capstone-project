@@ -28,6 +28,7 @@ export const useProcessCheckout = () => {
 };
 
 export const useUserOrders = () => {
+<<<<<<< HEAD
   return useQuery({
     queryKey: ["user_orders"],
     queryFn: async () => {
@@ -36,4 +37,23 @@ export const useUserOrders = () => {
       return response.data.orders ?? [];
     },
   });
+=======
+    return useQuery({
+        queryKey: ["user_orders"],
+        queryFn: async () => {
+            const response = await api.get("/orders/myorders");
+            return response.data.orders ?? [];
+        }
+    });
+};
+
+export const useReceivedOrders = () => {
+    return useQuery({
+        queryKey: ["received_orders"],
+        queryFn: async () => {
+            const response = await api.get("/orders/receivedorders");
+            return response.data.orders ?? [];
+        }
+    });
+>>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 };

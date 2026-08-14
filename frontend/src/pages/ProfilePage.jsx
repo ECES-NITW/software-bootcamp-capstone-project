@@ -22,12 +22,24 @@ function ProfilePage() {
     setEditMode(true);
   };
 
+  const clearPreview = () => {
+    if (profilePic && previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl('');
+    setProfilePic(null);
+  };
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (profilePic && previewUrl) URL.revokeObjectURL(previewUrl);
       setProfilePic(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
+  };
+
+  const handleCancel = () => {
+    clearPreview();
+    setEditMode(false);
   };
 
   const handleSave = (e) => {
@@ -38,8 +50,8 @@ function ProfilePage() {
 
     updateProfileMutation.mutate(formData, {
       onSuccess: () => {
+        clearPreview();
         setEditMode(false);
-        setProfilePic(null);
       },
       onError: (err) => {
         alert('Failed to update profile: ' + (err.message || err));
@@ -103,7 +115,7 @@ function ProfilePage() {
                   <button type="submit" className="btn btn-primary" disabled={updateProfileMutation.isPending}>
                     {updateProfileMutation.isPending ? 'Saving...' : 'Save'}
                   </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => setEditMode(false)}>
+                  <button type="button" className="btn btn-secondary" onClick={handleCancel}>
                     Cancel
                   </button>
                 </div>
@@ -132,7 +144,7 @@ function ProfilePage() {
         {isProductsLoading ? (
           <p>Loading listings...</p>
         ) : products && products.length > 0 ? (
-          <div className="catalogGrid">
+          <div className="grid">
             {products.map((product) => (
               <ItemCard key={product._id} product={product} />
             ))}

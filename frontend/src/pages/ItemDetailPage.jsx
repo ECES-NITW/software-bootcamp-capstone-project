@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -9,6 +10,15 @@ import {
 import useUser, { useProfile } from "../hooks/useUser";
 import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
 import { useAgreedPrice } from "../hooks/useChat";
+=======
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProduct, useDeleteProduct, listingPrice, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
+import useUser, { useProfile } from '../hooks/useUser';
+import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
+import { useAgreedPrice } from '../hooks/useChat';
+import { useCreateOrderRequest, REQUEST_BUTTON_LABELS } from '../hooks/useOrderRequest';
+>>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 
 function ItemDetailPage() {
   const { id } = useParams();
@@ -70,6 +80,7 @@ function ItemDetailPage() {
     });
   };
 
+<<<<<<< HEAD
   const handleBuy = () => {
     if (item.status !== "Available") {
       return;
@@ -98,6 +109,31 @@ function ItemDetailPage() {
   //     },
   //   });
   // };
+=======
+  const requestMutation = useCreateOrderRequest();
+
+  const handleOrderRequest = (orderType) => {
+    requestMutation.mutate(
+      { productId: id, orderType },
+      {
+        onSuccess: (data) => {
+          navigate('/chat', {
+            state: {
+              productId: id,
+              orderRequest: data.order?._id
+                ? { ...data.order, orderId: data.order._id }
+                : undefined,
+            },
+          });
+        },
+        onError: (err) => {
+          alert(err.response?.data?.message || err.message || "Failed to send request");
+        },
+      },
+    );
+  };
+
+>>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
   if (isLoading) {
     return (
       <div
@@ -393,6 +429,28 @@ function ItemDetailPage() {
                       </div>
                     )}
                   </div>
+<<<<<<< HEAD
+=======
+
+                  {isLoggedIn && !isOwnProduct && item.status === "Available" && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+                      {[canSell && "buy", canRent && "rent", canExchange && "exchange"]
+                        .filter(Boolean)
+                        .map((orderType) => (
+                          <button
+                            key={orderType}
+                            className="btn"
+                            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontWeight: 700 }}
+                            onClick={() => handleOrderRequest(orderType)}
+                            disabled={requestMutation.isPending}
+                          >
+                            {requestMutation.isPending ? 'Sending request...' : REQUEST_BUTTON_LABELS[orderType]}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+
+>>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
                   {isLoggedIn ? (
                     <div
                       style={{
@@ -419,6 +477,7 @@ function ItemDetailPage() {
                         </button>
                       ) : (
                         <>
+<<<<<<< HEAD
                           {canSell && (
                             <button
                               className="btn btn-primary"
@@ -469,6 +528,11 @@ function ItemDetailPage() {
                               onClick={handleStartChat}
                             >
                               🔄 Request Exchange
+=======
+                          {item.status === "Available" && (
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/checkout/${item._id}`)}>
+                              🔒 Secure Checkout
+>>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
                             </button>
                           )}
                           <button

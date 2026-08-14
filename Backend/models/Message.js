@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ["text", "offer"],
+            enum: ["text", "offer", "order"],
             default: "text",
         },
         message: {
@@ -31,6 +31,14 @@ const messageSchema = new mongoose.Schema(
         offerAmount: {
             type: Number,
             min: [0, "Offer cannot be negative"],
+        },
+        orderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Order",
+        },
+        orderType: {
+            type: String,
+            enum: ["buy", "rent", "exchange"],
         },
         offerStatus: {
             type: String,
