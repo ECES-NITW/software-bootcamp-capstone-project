@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
-const razorpay = require("../config/razorpay");
+const getRazorpay = require("../config/razorpay");
 
 const createRazorpayOrder = async (req, res) => {
   try {
@@ -45,7 +45,7 @@ const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    const razorpayOrder = await razorpay.orders.create({
+    const razorpayOrder = await getRazorpay().orders.create({
       amount: Math.round(order.totalAmount * 100),
       currency: "INR",
       receipt: `order_${order._id}`,

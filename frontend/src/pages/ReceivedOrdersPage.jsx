@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 function ReceivedOrdersPage() {
-  const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -427,32 +424,6 @@ function ReceivedOrdersPage() {
                   </div>
                 )}
 
-                {/* View order */}
-                <button
-                  onClick={() => navigate(`/orders/${order._id}`)}
-                  style={{
-                    marginTop: "15px",
-                    width: "100%",
-                    padding: "10px",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    background: "white",
-                    cursor: "pointer",
-                  }}
-                >
-                  View Order Details
-                </button>
-                <p
-                  style={{
-                    marginTop: "8px",
-                    fontSize: "0.78rem",
-                    color: "var(--text-muted)",
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Order details and management features coming soon.
-                </p>
               </div>
             );
           })}

@@ -1,14 +1,10 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  useProduct,
-  useDeleteProduct,
-  listingPrice,
-  PLACEHOLDER_IMAGE,
-} from "../hooks/useProducts";
-import useUser, { useProfile } from "../hooks/useUser";
-import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
-import { useAgreedPrice } from "../hooks/useChat";
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProduct, useDeleteProduct, listingPrice, PLACEHOLDER_IMAGE } from '../hooks/useProducts';
+import useUser, { useProfile } from '../hooks/useUser';
+import { useWishlistIds, useToggleWishlist } from '../hooks/useWishlist';
+import { useAgreedPrice } from '../hooks/useChat';
+import { useCreateOrderRequest, REQUEST_BUTTON_LABELS } from '../hooks/useOrderRequest';
 
 function ItemDetailPage() {
   const { id } = useParams();
@@ -20,96 +16,65 @@ function ItemDetailPage() {
   const isLoggedIn = Boolean(user);
 
   const { data: item, isLoading, isError } = useProduct(id);
-
   const sellerId = item?.seller?._id ?? item?.seller;
-
   const { data: contactInfo } = useProfile(sellerId);
 
-  const isOwnProduct = Boolean(
-    user && sellerId && String(sellerId) === String(user.user_id),
-  );
+  const isOwnProduct = Boolean(user && sellerId && String(sellerId) === String(user.user_id));
 
   const deleteMutation = useDeleteProduct();
 
   const { data: wishlistIds } = useWishlistIds();
-
   const toggleWishlistMutation = useToggleWishlist();
-
   const isWishlisted = Boolean(wishlistIds?.includes(String(id)));
 
   const { data: agreedPrice } = useAgreedPrice(id);
-
   const hasAgreedPrice = isLoggedIn && agreedPrice != null;
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
       deleteMutation.mutate(id, {
         onSuccess: () => {
-          navigate("/feed");
+          navigate('/feed');
         },
-
         onError: (err) => {
-          alert(
-            "Failed to delete listing: " +
-              (err.response?.data?.message || err.message),
-          );
-        },
+          alert("Failed to delete listing: " + (err.response?.data?.message || err.message));
+        }
       });
     }
   };
 
   const handleStartChat = () => {
-    if (canExchange) {
-      alert("Exchange request placed! Waiting for the seller to accept.");
-    }
+    navigate('/chat', { state: { productId: id } });
+  };
 
-    navigate("/chat", {
-      state: {
-        productId: id,
+  const requestMutation = useCreateOrderRequest();
+
+  const handleOrderRequest = (orderType) => {
+    requestMutation.mutate(
+      { productId: id, orderType },
+      {
+        onSuccess: (data) => {
+          navigate('/chat', {
+            state: {
+              productId: id,
+              orderRequest: data.order?._id
+                ? { ...data.order, orderId: data.order._id }
+                : undefined,
+            },
+          });
+        },
+        onError: (err) => {
+          alert(err.response?.data?.message || err.message || "Failed to send request");
+        },
       },
-    });
+    );
   };
 
-  const handleBuy = () => {
-    if (item.status !== "Available") {
-      return;
-    }
-
-    navigate(`/checkout/${item._id}?type=buy`);
-  };
-
-  const handleRent = () => {
-    if (item.status !== "Available") {
-      return;
-    }
-
-    navigate(`/checkout/${item._id}?type=rent`);
-  };
-
-  //   const handleRentRequest = () => {
-  //   alert(
-  //     "Rental order placed! Waiting for the seller to accept."
-  //   );
-
-  //   navigate("/chat", {
-  //     state: {
-  //       productId: id,
-  //       rentalRequest: true,
-  //     },
-  //   });
-  // };
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "64px",
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '64px' }}>
         <div className="statusIndicator">
           <span className="statusDot statusDot-active"></span>
-
           <span>Loading item details...</span>
         </div>
       </div>
@@ -118,61 +83,25 @@ function ItemDetailPage() {
 
   if (isError || !item) {
     return (
-      <div
-        className="glassCard"
-        style={{
-          textAlign: "center",
-          padding: "48px 0",
-          border: "1px dashed #ef4444",
-        }}
-      >
-        <p
-          style={{
-            color: "#fca5a5",
-          }}
-        >
-          Item not found or failed to retrieve details.
-        </p>
-
-        <button
-          className="btn"
-          style={{
-            marginTop: "16px",
-          }}
-          onClick={() => navigate("/")}
-        >
-          Back to Home
-        </button>
+      <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed #ef4444' }}>
+        <p style={{ color: '#fca5a5' }}>Item not found or failed to retrieve details.</p>
+        <button className="btn" style={{ marginTop: '16px' }} onClick={() => navigate('/')}>Back to Home</button>
       </div>
     );
   }
 
   const images = item.images ?? [];
-
   const image = images[activeImage]?.url ?? images[0]?.url;
 
   const types = item.types ?? [];
-
   const canSell = types.includes("sell");
-
   const canRent = types.includes("rent");
-
   const canExchange = types.includes("exchange");
-
   const sellerName = contactInfo?.userName ?? "Seller";
-
-  const sellerInitials =
-    (isOwnProduct ? user?.userName : sellerName)
-      ?.substring(0, 2)
-      .toUpperCase() ?? "??";
+  const sellerInitials = (isOwnProduct ? user?.userName : sellerName)?.substring(0, 2).toUpperCase() ?? "??";
 
   return (
-    <div
-      style={{
-        animation: "fadeInUp 0.4s ease-out",
-      }}
-    >
-      {/* BACK BUTTON */}
+    <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
 
       <button className="detailBackBtn" onClick={() => navigate(-1)}>
         ← Back to listings
@@ -180,8 +109,10 @@ function ItemDetailPage() {
 
       <div className="detailLayout">
         <div className="detailMainCol">
+
           <div className="detailPanel">
             <div className="detailGrid">
+
               <div className="detailGallery">
                 <div className="detailImageWrapper">
                   <img
@@ -189,11 +120,8 @@ function ItemDetailPage() {
                     alt={item.title}
                     className="detailImage"
                   />
-
                   {item.condition && (
-                    <span className="cardBadge badge-rent">
-                      {item.condition}
-                    </span>
+                    <span className="cardBadge badge-rent">{item.condition}</span>
                   )}
                 </div>
 
@@ -204,39 +132,25 @@ function ItemDetailPage() {
                         key={img.public_id ?? index}
                         src={img.url}
                         alt={`${item.title} ${index + 1}`}
-                        className={`detailThumb ${
-                          index === activeImage ? "active" : ""
-                        }`}
+                        className={`detailThumb ${index === activeImage ? 'active' : ''}`}
                         onClick={() => setActiveImage(index)}
                       />
                     ))}
                   </div>
                 )}
               </div>
+
               <div className="detailInfo">
+
                 <div>
-                  <div
-                    className="detailTags"
-                    style={{
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="detailTags" style={{ flexWrap: 'wrap' }}>
                     <span className="statusIndicator">
                       <span className="statusDot statusDot-active"></span>
-
                       {item.category}
                     </span>
-
                     {item.status && (
                       <span className="statusIndicator">
-                        <span
-                          className={`statusDot ${
-                            item.status === "Available"
-                              ? "statusDot-active"
-                              : "statusDot-pending"
-                          }`}
-                        ></span>
-
+                        <span className={`statusDot ${item.status === 'Available' ? 'statusDot-active' : 'statusDot-pending'}`}></span>
                         {item.status}
                       </span>
                     )}
@@ -245,67 +159,43 @@ function ItemDetailPage() {
                   <h1 className="detailTitle">{item.title}</h1>
                 </div>
 
-                {/* SELLER */}
-
                 <div className="detailSellerCard">
                   <div className="detailSellerAvatar">{sellerInitials}</div>
-
                   <div>
-                    <div className="detailSellerName">
-                      {isOwnProduct ? "You" : sellerName}
-                    </div>
-
+                    <div className="detailSellerName">{isOwnProduct ? 'You' : sellerName}</div>
                     <div className="detailSellerMeta">
-                      {item.location ? (
-                        <>📍 {item.location}</>
-                      ) : (
-                        "Campus seller"
-                      )}
+                      {item.location ? <>📍 {item.location}</> : 'Campus seller'}
                     </div>
                   </div>
                 </div>
 
                 <div className="detailDescription">
                   <h3>Description</h3>
-
                   <p>{item.description}</p>
                 </div>
+
                 <div className="detailPriceSection">
                   <div className="detailPriceRows">
                     {canSell && (
                       <div className="detailPriceRow">
                         <div className="detailPriceLabel">
-                          {hasAgreedPrice ? "Agreed Price" : "Price"}
+                          {hasAgreedPrice ? 'Agreed Price' : 'Price'}
                         </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "baseline",
-                            gap: "10px",
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
                           {hasAgreedPrice && (
                             <span
                               style={{
-                                fontSize: "1rem",
-                                color: "var(--text-muted)",
-                                textDecoration: "line-through",
+                                fontSize: '1rem',
+                                color: 'var(--text-muted)',
+                                textDecoration: 'line-through',
                               }}
                             >
                               ₹{item.price}
                             </span>
                           )}
-
                           <div
                             className="detailPriceValue"
-                            style={
-                              hasAgreedPrice
-                                ? {
-                                    color: "#2e8b57",
-                                  }
-                                : undefined
-                            }
+                            style={hasAgreedPrice ? { color: '#2e8b57' } : undefined}
                           >
                             ₹{hasAgreedPrice ? agreedPrice : item.price}
                           </div>
@@ -316,219 +206,125 @@ function ItemDetailPage() {
                     {!canSell && hasAgreedPrice && (
                       <div className="detailPriceRow">
                         <div className="detailPriceLabel">Agreed Price</div>
-
-                        <div
-                          className="detailPriceValue"
-                          style={{
-                            color: "#2e8b57",
-                          }}
-                        >
+                        <div className="detailPriceValue" style={{ color: '#2e8b57' }}>
                           ₹{agreedPrice}
                         </div>
                       </div>
                     )}
+
                     {canRent && (
                       <div className="detailPriceRow">
                         <div>
                           <div className="detailPriceLabel">Rent</div>
-
                           {item.deposit > 0 && (
-                            <div
-                              style={{
-                                fontSize: "0.8rem",
-                                color: "var(--text-muted)",
-                                marginTop: "6px",
-                              }}
-                            >
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
                               Refundable deposit ₹{item.deposit}
                             </div>
                           )}
                         </div>
-
                         <div className="detailPriceValue">
                           ₹{item.rentPrice}
-                          <span
-                            style={{
-                              fontSize: "1rem",
-                              color: "var(--text-muted)",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {" "}
-                            /week
-                          </span>
+                          <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}> /week</span>
                         </div>
                       </div>
                     )}
+
                     {canExchange && (
                       <div className="detailPriceRow">
                         <div>
                           <div className="detailPriceLabel">Exchange</div>
-
                           {item.exchangePreferences && (
-                            <div
-                              style={{
-                                fontSize: "0.85rem",
-                                color: "var(--text-muted)",
-                                marginTop: "6px",
-                              }}
-                            >
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
                               Wants: {item.exchangePreferences}
                             </div>
                           )}
                         </div>
-
-                        <span className="listingTypeTag tag-exchange">
-                          Open to swaps
-                        </span>
+                        <span className="listingTypeTag tag-exchange">Open to swaps</span>
                       </div>
                     )}
+
                     {!canSell && !canRent && !canExchange && (
                       <div className="detailPriceRow">
                         <div className="detailPriceLabel">Budget</div>
-
-                        <div className="detailPriceValue">
-                          ₹{listingPrice(item)}
-                        </div>
+                        <div className="detailPriceValue">₹{listingPrice(item)}</div>
                       </div>
                     )}
                   </div>
+
+                  {isLoggedIn && !isOwnProduct && item.status === "Available" && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
+                      {[canSell && "buy", canRent && "rent", canExchange && "exchange"]
+                        .filter(Boolean)
+                        .map((orderType) => (
+                          <button
+                            key={orderType}
+                            className="btn"
+                            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontWeight: 700 }}
+                            onClick={() => handleOrderRequest(orderType)}
+                            disabled={requestMutation.isPending}
+                          >
+                            {requestMutation.isPending ? 'Sending request...' : REQUEST_BUTTON_LABELS[orderType]}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+
                   {isLoggedIn ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "12px",
-                      }}
-                    >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {isOwnProduct ? (
                         <button
                           className="btn"
-                          style={{
-                            width: "100%",
-                            background: "#fee2e2",
-                            border: "1.5px solid #fca5a5",
-                            color: "#b91c1c",
-                          }}
+                          style={{ width: '100%', background: '#fee2e2', border: '1.5px solid #fca5a5', color: '#b91c1c' }}
                           onClick={handleDelete}
                           disabled={deleteMutation.isPending}
                         >
-                          {deleteMutation.isPending
-                            ? "Deleting..."
-                            : "🗑️ Delete Listing"}
+                          {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Listing'}
                         </button>
                       ) : (
                         <>
-                          {canSell && (
-                            <button
-                              className="btn btn-primary"
-                              style={{
-                                width: "100%",
-                                opacity: item.status === "Available" ? 1 : 0.5,
-                                cursor:
-                                  item.status === "Available"
-                                    ? "pointer"
-                                    : "not-allowed",
-                              }}
-                              disabled={item.status !== "Available"}
-                              onClick={handleBuy}
-                            >
-                              {item.status === "Available"
-                                ? "🔒 Buy Securely"
-                                : "🔒 Item Reserved"}
-                            </button>
-                          )}
-                          {canRent && (
-                            <button
-                              className="btn btn-primary"
-                              style={{
-                                width: "100%",
-                                opacity: item.status === "Available" ? 1 : 0.5,
-                                cursor:
-                                  item.status === "Available"
-                                    ? "pointer"
-                                    : "not-allowed",
-                              }}
-                              disabled={item.status !== "Available"}
-                              onClick={handleRent}
-                            >
-                              {item.status === "Available"
-                                ? "🔒 Rent Securely"
-                                : "🔒 Item Reserved"}
-                            </button>
-                          )}
-                          {canExchange && (
-                            <button
-                              className="btn"
-                              style={{
-                                width: "100%",
-                                background: "var(--bg-secondary)",
-                                border: "1.5px solid var(--border-color)",
-                                color: "var(--primary)",
-                              }}
-                              onClick={handleStartChat}
-                            >
-                              🔄 Request Exchange
+                          {item.status === "Available" && (
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate(`/checkout/${item._id}`)}>
+                              🔒 Secure Checkout
                             </button>
                           )}
                           <button
                             className="btn"
-                            style={{
-                              width: "100%",
-                              background: "var(--bg-secondary)",
-                              border: "1.5px solid var(--border-color)",
-                              color: "var(--primary)",
-                            }}
+                            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
                             onClick={handleStartChat}
                           >
                             💬 Chat
                           </button>
-
                           <button
                             className="btn"
                             style={{
-                              width: "100%",
-                              background: isWishlisted
-                                ? "rgba(220, 38, 38, 0.08)"
-                                : "var(--bg-secondary)",
-                              border: `1.5px solid ${
-                                isWishlisted ? "#dc2626" : "var(--border-color)"
-                              }`,
-                              color: isWishlisted
-                                ? "#dc2626"
-                                : "var(--primary)",
+                              width: '100%',
+                              background: isWishlisted ? 'rgba(220, 38, 38, 0.08)' : 'var(--bg-secondary)',
+                              border: `1.5px solid ${isWishlisted ? '#dc2626' : 'var(--border-color)'}`,
+                              color: isWishlisted ? '#dc2626' : 'var(--primary)',
                             }}
                             onClick={() => toggleWishlistMutation.mutate(id)}
                             disabled={toggleWishlistMutation.isPending}
                           >
-                            {isWishlisted ? "❤️ Wishlisted" : "🤍 Wishlist"}
+                            {isWishlisted ? '❤️ Wishlisted' : '🤍 Wishlist'}
                           </button>
                         </>
                       )}
                     </div>
                   ) : (
-                    <div
-                      style={{
-                        background: "#fdf5e6",
-                        border: "1.5px dashed var(--secondary)",
-                        padding: "16px",
-                        borderRadius: "12px",
-                        color: "var(--accent-swap)",
-                        textAlign: "center",
-                        fontSize: "0.9rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      ⚠️ Authorization required. Please log in or register to
-                      buy or chat.
+                    <div style={{ background: '#fdf5e6', border: '1.5px dashed var(--secondary)', padding: '16px', borderRadius: '12px', color: 'var(--accent-swap)', textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
+                      ⚠️ Authorization required. Please log in or register to buy or chat.
                     </div>
                   )}
                 </div>
+
               </div>
+
             </div>
           </div>
+
         </div>
       </div>
+
     </div>
   );
 }
