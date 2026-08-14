@@ -1,8 +1,8 @@
 import {
-    useQuery,
-    useInfiniteQuery,
-    useMutation,
-    useQueryClient,
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
 } from "@tanstack/react-query";
 import api from "../api/api";
 
@@ -14,7 +14,6 @@ export const listingPrice = (product) =>
   product?.price ?? product?.rentPrice ?? product?.budget ?? 0;
 
 export const useProducts = (filters = {}) => {
-<<<<<<< HEAD
   const { category, type, search, sort } = filters;
   return useQuery({
     queryKey: ["products", search, category, type, sort],
@@ -41,44 +40,28 @@ export const useProducts = (filters = {}) => {
       return data;
     },
   });
-=======
-    const { category, type, search, sort } = filters;
-    return useQuery({
-        queryKey: ["products", search, category, type, sort],
-        placeholderData: (prev) => prev,
-        queryFn: async () => {
-            const params = { sort, limit: 200 };
-            if (search) params.search = search;
-            if (category && category !== "All") params.category = category;
-            params.types =
-                type && type !== "all" ? [type] : ["sell", "rent", "exchange"];
-            const response = await api.get("/products", { params });
-            return response.data.products ?? [];
-        },
-    });
->>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 };
 
 export const useInfiniteProducts = (filters = {}) => {
-    const { category, type, search, sort } = filters;
-    return useInfiniteQuery({
-        queryKey: ["products", "infinite", search, category, type, sort],
-        initialPageParam: 1,
-        placeholderData: (prev) => prev,
-        queryFn: async ({ pageParam }) => {
-            const params = { sort, page: pageParam, limit: PRODUCTS_PAGE_SIZE };
-            if (search) params.search = search;
-            if (category && category !== "All") params.category = category;
-            params.types =
-                type && type !== "all" ? [type] : ["sell", "rent", "exchange"];
-            const response = await api.get("/products", { params });
-            return response.data;
-        },
-        getNextPageParam: (lastPage) =>
-            lastPage.currentPage < lastPage.totalPages
-                ? lastPage.currentPage + 1
-                : undefined,
-    });
+  const { category, type, search, sort } = filters;
+  return useInfiniteQuery({
+    queryKey: ["products", "infinite", search, category, type, sort],
+    initialPageParam: 1,
+    placeholderData: (prev) => prev,
+    queryFn: async ({ pageParam }) => {
+      const params = { sort, page: pageParam, limit: PRODUCTS_PAGE_SIZE };
+      if (search) params.search = search;
+      if (category && category !== "All") params.category = category;
+      params.types =
+        type && type !== "all" ? [type] : ["sell", "rent", "exchange"];
+      const response = await api.get("/products", { params });
+      return response.data;
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.currentPage < lastPage.totalPages
+        ? lastPage.currentPage + 1
+        : undefined,
+  });
 };
 
 export const useProduct = (productId) => {
@@ -119,7 +102,6 @@ export const useUpdateProduct = () => {
   });
 };
 
-<<<<<<< HEAD
 export const useUserProducts = () => {
   return useQuery({
     queryKey: ["products", "my"],
@@ -128,17 +110,6 @@ export const useUserProducts = () => {
       return response.data.products ?? [];
     },
   });
-=======
-export const useUserProducts = (sellerId) => {
-    return useQuery({
-        queryKey: ["products", "user", sellerId],
-        enabled: Boolean(sellerId),
-        queryFn: async () => {
-            const response = await api.get("/products/my-products");
-            return response.data.products ?? [];
-        }
-    });
->>>>>>> 62ee51df517e1f440d32111ff5194eb04c7bfd95
 };
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
