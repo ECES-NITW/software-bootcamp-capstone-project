@@ -2,7 +2,10 @@ const fs = require("fs");
 const Product = require("../models/Product");
 const cloudinary = require("../config/cloudinary");
 
-const toNumber = (value) =>  value === undefined || value === null || value === "" ? undefined : Number(value);
+const toNumber = (value) =>
+  value === undefined || value === null || value === ""
+    ? undefined
+    : Number(value);
 const toArray = (value) => [].concat(value ?? []);
 
 const createProduct = async (req, res) => {
@@ -48,7 +51,9 @@ const createProduct = async (req, res) => {
       price: types.includes("sell") ? toNumber(price) : undefined,
       rentPrice: types.includes("rent") ? toNumber(rentPrice) : undefined,
       deposit: types.includes("rent") ? toNumber(deposit) : undefined,
-      exchangePreferences: types.includes("exchange") ? exchangePreferences : undefined,
+      exchangePreferences: types.includes("exchange")
+        ? exchangePreferences
+        : undefined,
       budget: types.includes("looking-for") ? toNumber(budget) : undefined,
       category,
       condition,
@@ -94,8 +99,14 @@ const getProducts = async (req, res) => {
       sort = "newest",
     } = req.query;
 
-    const filter = {};
-
+    // Only show products that are currently available
+    const filter = {
+      status: "Available",
+    };
+    // Filter products by seller
+    if (req.query.seller) {
+      filter.seller = req.query.seller;
+    }
     // Search
     if (search) {
       const pattern = String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -201,16 +212,49 @@ const getProducts = async (req, res) => {
   }
 };
 
-
 // Get My Products
 
+// const getMyProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find({
+//       seller: req.user.id,
+//     })
+//       .populate("seller", "name email")
+//       .sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       success: true,
+//       totalProducts: products.length,
+//       products,
+//     });
+//   } catch (error) {
+//     console.error("Get My Products Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch your products.",
+//       error: error.message,
+//     });
+//   }
+// };
 const getMyProducts = async (req, res) => {
   try {
+    console.log("LOGGED IN USER ID:", req.user.id);
+
     const products = await Product.find({
       seller: req.user.id,
     })
       .populate("seller", "userName email")
       .sort({ createdAt: -1 });
+
+    console.log(
+      "MY PRODUCTS:",
+      products.map((p) => ({
+        id: p._id,
+        title: p.title,
+        seller: p.seller?._id,
+      })),
+    );
 
     return res.status(200).json({
       success: true,
@@ -227,7 +271,6 @@ const getMyProducts = async (req, res) => {
     });
   }
 };
-
 // Get Product By ID
 
 const getProductById = async (req, res) => {
@@ -330,7 +373,11 @@ const updateProduct = async (req, res) => {
         type: "exchange",
         value: req.body.exchangePreferences,
       },
-      { field: "budget", type: "looking-for", value: toNumber(req.body.budget) },
+      {
+        field: "budget",
+        type: "looking-for",
+        value: toNumber(req.body.budget),
+      },
     ];
 
     for (const { field, type, value } of typeFields) {

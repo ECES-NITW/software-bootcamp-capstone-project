@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useProduct } from '../hooks/useProducts';
-import { useProcessCheckout } from '../hooks/useCheckout';
+import { useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useProduct } from "../hooks/useProducts";
+import api from "../api/api";
 
 function CheckoutPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const orderType = searchParams.get("type") || "buy";
 
   const [days, setDays] = useState(7);
   const [cardName, setCardName] = useState("");
@@ -13,73 +16,174 @@ function CheckoutPage() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVV, setCardCVV] = useState("");
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: item, isLoading, isError } = useProduct(id);
-  const checkoutMutation = useProcessCheckout();
 
-  const rentPrice = item ? (item.rentPrice ?? item.price ?? 0) : 0;
-  const depositPrice = item ? (item.deposit || 0) : 0;
+  const rentPrice = item ? Number(item.rentPrice ?? item.price ?? 0) : 0;
+  const depositPrice = item ? Number(item.deposit ?? 0) : 0;
+  const buyPrice = item ? Number(item.price ?? 0) : 0;
 
-  const calculateTotal = () => {
-    const dailyRate = rentPrice / 7;
-    return (dailyRate * days) + depositPrice;
-  };
+  const totalAmount =
+    orderType === "rent" ? (rentPrice / 7) * days + depositPrice : buyPrice;
 
   const handleCardNumberChange = (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 16) value = value.slice(0, 16);
-    let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
-    setCardNumber(formatted);
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length > 16) {
+      value = value.slice(0, 16);
+    }
+
+    setCardNumber(value.match(/.{1,4}/g)?.join(" ") || value);
   };
 
   const handleExpiryChange = (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 4) value = value.slice(0, 4);
-    if (value.length > 2) {
-      setCardExpiry(`${value.slice(0, 2)}/${value.slice(2)}`);
-    } else {
-      setCardExpiry(value);
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length > 4) {
+      value = value.slice(0, 4);
     }
+
+    setCardExpiry(
+      value.length > 2 ? `${value.slice(0, 2)}/${value.slice(2)}` : value,
+    );
   };
 
   const handleCVVChange = (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 3) value = value.slice(0, 3);
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length > 3) {
+      value = value.slice(0, 3);
+    }
+
     setCardCVV(value);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!cardName || !cardNumber || !cardExpiry || !cardCVV) {
-      alert("Please fill in all credit card details.");
-      return;
-    }
+  const handlePayment = async () => {
+    if (isSubmitting) return;
 
-    const payload = {
-      itemId: id,
-      cardholder: cardName,
-      cardNumber: cardNumber,
-      days: parseInt(days),
-      price: rentPrice,
-      deposit: depositPrice
-    };
+    setIsSubmitting(true);
 
-    checkoutMutation.mutate(payload, {
-      onSuccess: () => {
-        navigate('/chat');
-      },
-      onError: (err) => {
-        alert("Payment Escrow Failed: " + (err.message || err));
+    try {
+      const checkoutPayload = {
+        productId: id,
+        orderType,
+
+        ...(orderType === "rent" && {
+          rentalStartDate: new Date(),
+          rentalEndDate: new Date(
+            Date.now() + Number(days) * 24 * 60 * 60 * 1000,
+          ),
+        }),
+      };
+
+      const checkoutResponse = await api.post("/orders", checkoutPayload);
+
+      const order = checkoutResponse.data.order;
+
+      if (!order?._id) {
+        throw new Error("Order was not created");
       }
-    });
+
+      if (orderType === "rent") {
+        alert(
+          "Rental order placed successfully! Waiting for the seller to accept.",
+        );
+
+        navigate("/orders");
+        return;
+      }
+
+      const orderId = order._id;
+
+      const paymentResponse = await api.post(`/payments/create/${orderId}`);
+
+      const { razorpayOrderId, amount, currency, key } = paymentResponse.data;
+
+      if (!window.Razorpay) {
+        throw new Error("Razorpay SDK is not loaded");
+      }
+
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "Campus Marketplace",
+        description:
+          orderType === "exchange"
+            ? "Exchange Request"
+            : "Secure Purchase Payment",
+        order_id: razorpayOrderId,
+
+        handler: async function (paymentResponse) {
+          try {
+            const verifyResponse = await api.post("/payments/verify", {
+              orderId,
+
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+
+              razorpay_signature: paymentResponse.razorpay_signature,
+            });
+
+            if (verifyResponse.data.success) {
+              if (orderType === "buy") {
+                alert("Purchase order placed successfully!");
+              } else {
+                alert(
+                  "Exchange request placed successfully! Waiting for the seller to accept.",
+                );
+              }
+
+              navigate("/orders");
+            }
+          } catch (error) {
+            console.error("Payment verification failed:", error);
+
+            alert(
+              error.response?.data?.message || "Payment verification failed",
+            );
+          }
+        },
+
+        theme: {
+          color: "#7f8f80",
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on("payment.failed", (response) => {
+        alert(response.error?.description || "Payment failed");
+      });
+
+      razorpay.open();
+    } catch (error) {
+      console.error("Checkout error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to place order",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '64px' }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "64px",
+        }}
+      >
         <div className="statusIndicator">
           <span className="statusDot statusDot-active"></span>
-          <span>Loading rental invoice details...</span>
+          <span>Loading checkout details...</span>
         </div>
       </div>
     );
@@ -87,175 +191,420 @@ function CheckoutPage() {
 
   if (isError || !item) {
     return (
-      <div className="glassCard" style={{ textAlign: 'center', padding: '48px 0', border: '1px dashed #ef4444' }}>
-        <p style={{ color: '#fca5a5' }}>Listing checkout details not found.</p>
-        <button className="btn" style={{ marginTop: '16px' }} onClick={() => navigate('/')}>Back to Home</button>
+      <div
+        className="glassCard"
+        style={{
+          textAlign: "center",
+          padding: "48px 0",
+          border: "1px dashed #ef4444",
+        }}
+      >
+        <p style={{ color: "#fca5a5" }}>Listing checkout details not found.</p>
+
+        <button
+          className="btn"
+          style={{ marginTop: "16px" }}
+          onClick={() => navigate("/")}
+        >
+          Back to Home
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ animation: 'fadeInUp 0.4s ease-out' }}>
-      
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'Lora, serif', fontSize: '2rem', fontWeight: 700 }}>
-          🔒 Secure Rental Escrow
+    <div style={{ animation: "fadeInUp 0.4s ease-out" }}>
+      <div style={{ marginBottom: "32px" }}>
+        <h1
+          style={{
+            fontFamily: "Lora, serif",
+            fontSize: "2rem",
+            fontWeight: 700,
+            marginBottom: "8px",
+          }}
+        >
+          {orderType === "rent"
+            ? "🔒 Secure Rental Escrow"
+            : "🔒 Secure Purchase"}
         </h1>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Funds will be held securely in escrow until item is returned safely.
+
+        <p style={{ color: "var(--text-muted)" }}>
+          {orderType === "rent"
+            ? "Submit your rental request. The seller will review and accept it before payment."
+            : "Complete your purchase securely through Razorpay."}
         </p>
       </div>
 
       <div className="checkoutContainer">
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          <form className="glassCard" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ fontFamily: 'Lora, serif', fontSize: '1.2rem', fontWeight: 700 }}>
-              Payment Information
-            </h3>
-
-            <div className="formGroup">
-              <label className="formLabel">Rental Duration (Days)</label>
-              <input 
-                type="number" 
-                className="formInput" 
-                value={days} 
-                onChange={(e) => setDays(Math.max(1, parseInt(e.target.value) || 1))}
-                min="1"
-                required
-              />
-            </div>
-
-            <div className="formGroup">
-              <label className="formLabel">Cardholder Name</label>
-              <input 
-                type="text" 
-                className="formInput" 
-                placeholder="e.g. Varshith Mummaneni"
-                value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="formGroup">
-              <label className="formLabel">Card Number</label>
-              <input 
-                type="text" 
-                className="formInput" 
-                placeholder="4111 2222 3333 4444"
-                value={cardNumber}
-                onChange={handleCardNumberChange}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="formGroup">
-                <label className="formLabel">Expiration Date</label>
-                <input 
-                  type="text" 
-                  className="formInput" 
-                  placeholder="MM/YY"
-                  value={cardExpiry}
-                  onChange={handleExpiryChange}
-                  required
-                />
-              </div>
-              <div className="formGroup">
-                <label className="formLabel">CVV</label>
-                <input 
-                  type="password" 
-                  className="formInput" 
-                  placeholder="•••"
-                  value={cardCVV}
-                  onChange={handleCVVChange}
-                  onFocus={() => setIsFlipped(true)}
-                  onBlur={() => setIsFlipped(false)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: '16px', background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <span>Rental ({days} days @ ₹{(rentPrice/7).toFixed(2)}/day):</span>
-                <span style={{ color: 'var(--text-main)' }}>₹{((rentPrice / 7) * days).toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                <span>Refundable Deposit:</span>
-                <span style={{ color: 'var(--text-main)' }}>₹{depositPrice.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', borderTop: '1.5px solid var(--border-color)', paddingTop: '12px' }}>
-                <span>Total Escrow Amount:</span>
-                <span>₹{calculateTotal().toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div style={{ background: '#fef3c7', border: '1px dashed #d97706', color: '#b45309', padding: '12px', borderRadius: '8px', fontSize: '0.88rem', textAlign: 'center', marginBottom: '8px' }}>
-              ℹ️ Checkout is in placeholder mode. Integration code will be added shortly.
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled
-              style={{ width: '100%', marginTop: '12px', opacity: 0.7, cursor: 'not-allowed' }}
-            >
-              🔒 Fund Escrow (Placeholder)
-            </button>
-          </form>
-
-        </div>
-
-        <div style={{ position: 'sticky', top: '100px' }}>
-          <div className="creditCardWrapper">
-            <div 
-              className="creditCard" 
-              style={{ 
-                transform: isFlipped ? 'rotateY(180deg)' : 'none',
-                background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
-                boxShadow: '0 20px 40px rgba(65, 90, 66, 0.15)'
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+          }}
+        >
+          <form
+            className="glassCard"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handlePayment();
+            }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "Lora, serif",
+                fontSize: "1.2rem",
+                fontWeight: 700,
               }}
             >
-              {!isFlipped ? (
+              {orderType === "rent" ? "Rental Request" : "Payment Information"}
+            </h3>
+
+            {orderType === "rent" && (
+              <div className="formGroup">
+                <label className="formLabel">Rental Duration (Days)</label>
+
+                <input
+                  type="number"
+                  className="formInput"
+                  value={days}
+                  onChange={(e) =>
+                    setDays(Math.max(1, parseInt(e.target.value) || 1))
+                  }
+                  min="1"
+                  required
+                />
+              </div>
+            )}
+
+            {orderType !== "rent" && (
+              <>
+                <div className="formGroup">
+                  <label className="formLabel">Cardholder Name</label>
+
+                  <input
+                    type="text"
+                    className="formInput"
+                    placeholder="e.g. Varshith Mummaneni"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="formGroup">
+                  <label className="formLabel">Card Number</label>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="formInput"
+                    placeholder="4111 2222 3333 4444"
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    required
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                  }}
+                >
+                  <div className="formGroup">
+                    <label className="formLabel">Expiration Date</label>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="formInput"
+                      placeholder="MM/YY"
+                      value={cardExpiry}
+                      onChange={handleExpiryChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="formGroup">
+                    <label className="formLabel">CVV</label>
+
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      className="formInput"
+                      placeholder="•••"
+                      value={cardCVV}
+                      onChange={handleCVVChange}
+                      onFocus={() => setIsFlipped(true)}
+                      onBlur={() => setIsFlipped(false)}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div
+              style={{
+                marginTop: "8px",
+                background: "var(--bg-secondary)",
+                padding: "18px",
+                borderRadius: "14px",
+                border: "1px solid var(--border-color)",
+              }}
+            >
+              {orderType === "rent" && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="cardLogo">🏢 NITW Student Union</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>ESCROW CARD</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "10px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <span>Rental ({days} days)</span>
+
+                    <span style={{ color: "var(--text-main)" }}>
+                      ₹{((rentPrice / 7) * days).toFixed(2)}
+                    </span>
                   </div>
-                  <div className="cardChip"></div>
-                  <div className="cardNumber">
-                    {cardNumber || "•••• •••• •••• ••••"}
-                  </div>
-                  <div className="cardDetails">
-                    <div>
-                      <div className="cardHolderLabel">Cardholder</div>
-                      <div className="cardHolderVal">{cardName || "Your Name"}</div>
-                    </div>
-                    <div>
-                      <div className="cardExpiryLabel">Expires</div>
-                      <div className="cardExpiryVal">{cardExpiry || "MM/YY"}</div>
-                    </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "12px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <span>Refundable Deposit</span>
+
+                    <span style={{ color: "var(--text-main)" }}>
+                      ₹{depositPrice.toFixed(2)}
+                    </span>
                   </div>
                 </>
-              ) : (
-                <div style={{ transform: 'rotateY(180deg)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-                  <div style={{ height: '36px', background: '#000', margin: '0 -24px', marginTop: '8px' }}></div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', background: '#fff', padding: '6px 12px', borderRadius: '4px', color: '#000' }}>
-                    <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>CVV</span>
-                    <span style={{ fontFamily: 'Courier New', fontWeight: 700, fontStyle: 'italic' }}>{cardCVV || "•••"}</span>
-                  </div>
-                  <p style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                    This card is secure. Escrow transactions are processed locally using mock algorithms.
-                  </p>
+              )}
+
+              {orderType !== "rent" && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "12px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <span>Purchase Amount</span>
+
+                  <span style={{ color: "var(--text-main)" }}>
+                    ₹{buyPrice.toFixed(2)}
+                  </span>
                 </div>
               )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  borderTop: "1px solid var(--border-color)",
+                  paddingTop: "12px",
+                  fontSize: "1.15rem",
+                  fontWeight: 800,
+                }}
+              >
+                <span>
+                  {orderType === "rent"
+                    ? "Total Escrow Amount"
+                    : "Total Amount"}
+                </span>
+
+                <span>₹{totalAmount.toFixed(2)}</span>
+              </div>
             </div>
-          </div>
+
+            {orderType === "rent" && (
+              <div
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: "12px",
+                  background: "rgba(127, 143, 128, 0.08)",
+                  border: "1px solid rgba(127, 143, 128, 0.25)",
+                  color: "var(--text-muted)",
+                  fontSize: "0.88rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                ℹ️ No payment will be processed now. Your rental request will be
+                sent to the seller for acceptance.
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                marginTop: "4px",
+                padding: "15px 20px",
+                borderRadius: "12px",
+                fontSize: "1rem",
+                fontWeight: 700,
+                boxShadow: "0 8px 20px rgba(65, 90, 66, 0.15)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.7 : 1,
+              }}
+            >
+              {isSubmitting
+                ? "⏳ Processing..."
+                : orderType === "rent"
+                  ? `📩 Submit Rental Request`
+                  : `🔒 Pay ₹${totalAmount.toFixed(2)}`}
+            </button>
+          </form>
         </div>
 
+        {orderType !== "rent" && (
+          <div
+            style={{
+              position: "sticky",
+              top: "100px",
+            }}
+          >
+            <div className="creditCardWrapper">
+              <div
+                className="creditCard"
+                style={{
+                  transform: isFlipped ? "rotateY(180deg)" : "none",
+                  background:
+                    "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)",
+                  boxShadow: "0 20px 40px rgba(65, 90, 66, 0.15)",
+                }}
+              >
+                {!isFlipped ? (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span className="cardLogo">🏢 NITW Student Union</span>
+
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "rgba(255,255,255,0.6)",
+                        }}
+                      >
+                        PAYMENT CARD
+                      </span>
+                    </div>
+
+                    <div className="cardChip"></div>
+
+                    <div className="cardNumber">
+                      {cardNumber || "•••• •••• •••• ••••"}
+                    </div>
+
+                    <div className="cardDetails">
+                      <div>
+                        <div className="cardHolderLabel">Cardholder</div>
+
+                        <div className="cardHolderVal">
+                          {cardName || "Your Name"}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="cardExpiryLabel">Expires</div>
+
+                        <div className="cardExpiryVal">
+                          {cardExpiry || "MM/YY"}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      transform: "rotateY(180deg)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      height: "100%",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "36px",
+                        background: "#000",
+                        margin: "0 -24px",
+                        marginTop: "8px",
+                      }}
+                    ></div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: "12px",
+                        background: "#fff",
+                        padding: "6px 12px",
+                        borderRadius: "4px",
+                        color: "#000",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.6rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "1px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        CVV
+                      </span>
+
+                      <span
+                        style={{
+                          fontFamily: "Courier New",
+                          fontWeight: 700,
+                          fontStyle: "italic",
+                        }}
+                      >
+                        {cardCVV || "•••"}
+                      </span>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: "0.55rem",
+                        color: "rgba(255,255,255,0.4)",
+                        textAlign: "center",
+                      }}
+                    >
+                      Secure payment processing through Razorpay.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

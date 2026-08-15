@@ -25,6 +25,7 @@ const createOrder = async (req, res) => {
     const requiredListingType = orderType === "buy" ? "sell" : orderType;
 
     const product = await Product.findById(productId);
+    console.log("PRODUCT STATUS:", product.status);
     if (!product) {
       return res.status(404).json({
         success: false,

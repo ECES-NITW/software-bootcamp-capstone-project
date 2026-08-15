@@ -1,9 +1,7 @@
-import { NavLink } from 'react-router-dom';
-import useUser from '../hooks/useUser';
+import { NavLink } from "react-router-dom";
+import useUser from "../hooks/useUser";
 
-const iconStyle = { marginRight: '10px', flexShrink: 0, opacity: 0.8 };
-
-const StoreIcon = () => (
+const PageIcon = () => (
   <svg
     width="18"
     height="18"
@@ -13,7 +11,7 @@ const StoreIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={iconStyle}
+    style={{ marginRight: "10px", flexShrink: 0, opacity: 0.8 }}
   >
     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
     <line x1="3" y1="6" x2="21" y2="6" />
@@ -92,16 +90,16 @@ const UserIcon = () => (
 );
 
 const ChatIcon = () => (
-  <svg 
-    width="18" 
-    height="18" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    style={{ marginRight: '10px', flexShrink: 0, opacity: 0.8 }}
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ marginRight: "10px", flexShrink: 0, opacity: 0.8 }}
   >
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
@@ -117,7 +115,7 @@ const HeartIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ marginRight: '10px', flexShrink: 0, opacity: 0.8 }}
+    style={{ marginRight: "10px", flexShrink: 0, opacity: 0.8 }}
   >
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
@@ -131,39 +129,83 @@ function Sidebar() {
     <aside className="sidebar">
       <nav className="sidebarNav">
         <NavLink to="/">Home</NavLink>
-        
-        <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
 
-        <NavLink to="/feed" style={{ display: 'flex', alignItems: 'center' }}>
-          <StoreIcon /> Marketplace
-        </NavLink>
-        
-        <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
+        <div
+          style={{
+            margin: "8px 0",
+            borderBottom: "1px solid var(--border-color)",
+            opacity: 0.5,
+          }}
+        ></div>
 
-        <NavLink to="/looking-for" style={{ display: 'flex', alignItems: 'center' }}>
-          <SearchIcon /> Looking For
+        <NavLink to="/feed" style={{ display: "flex", alignItems: "center" }}>
+          <PageIcon /> Browse Catalog
         </NavLink>
-        <NavLink to="/post-item" style={{ display: 'flex', alignItems: 'center' }}>
-          <PlusCircleIcon /> Post an Item
+
+        <div
+          style={{
+            margin: "8px 0",
+            borderBottom: "1px solid var(--border-color)",
+            opacity: 0.5,
+          }}
+        ></div>
+
+        <NavLink
+          to="/looking-for"
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <PageIcon /> Looking For
         </NavLink>
-        
-        <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
+        <NavLink
+          to="/post-item"
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <PageIcon /> Post an Item
+        </NavLink>
+
+        <div
+          style={{
+            margin: "8px 0",
+            borderBottom: "1px solid var(--border-color)",
+            opacity: 0.5,
+          }}
+        ></div>
 
         {isLoggedIn && (
           <>
-            <NavLink to="/chat" style={{ display: 'flex', alignItems: 'center' }}>
+            <NavLink
+              to="/chat"
+              style={{ display: "flex", alignItems: "center" }}
+            >
               <ChatIcon /> Messages
             </NavLink>
-            <NavLink to="/orders" style={{ display: 'flex', alignItems: 'center' }}>
-              <PackageIcon /> My Orders
+            <NavLink
+              to="/orders"
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <PageIcon /> My Orders
             </NavLink>
-            <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center' }}>
-              <UserIcon /> My Profile
+
+            <NavLink
+              to="/received-orders"
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <PageIcon /> Received Orders
+            </NavLink>
+
+            <NavLink
+              to="/profile"
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <PageIcon /> My Profile
             </NavLink>
           </>
         )}
         {isLoggedIn && (
-          <NavLink to="/wishlist" style={{ display: 'flex', alignItems: 'center' }}>
+          <NavLink
+            to="/wishlist"
+            style={{ display: "flex", alignItems: "center" }}
+          >
             <HeartIcon /> Wishlist
           </NavLink>
         )}

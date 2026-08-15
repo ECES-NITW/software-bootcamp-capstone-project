@@ -7,6 +7,7 @@ const cloudinary = require("../config/cloudinary");
 const register = async (req, res) => {
   try {
     const { userName, email, phoneNumber, password } = req.body;
+    console.log(req.body);
     if (!userName || !email || !password || !phoneNumber) {
       return res.status(400).json({
         success: false,
