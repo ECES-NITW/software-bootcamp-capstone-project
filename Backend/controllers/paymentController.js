@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
-const razorpay = require("../config/razorpay");
+const getRazorpay = require("../config/razorpay");
 
 const createRazorpayOrder = async (req, res) => {
   try {
@@ -24,10 +24,19 @@ const createRazorpayOrder = async (req, res) => {
         message: "Only the buyer can make the payment",
       });
     }
-    if (order.orderType !== "buy" && order.status !== "accepted") {
+    if (order.orderType !== "buy") {
       return res.status(400).json({
         success: false,
-        message: "Order must be accepted before payment",
+        message: "Payments only apply to purchase orders",
+      });
+    }
+    if (order.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message:
+          order.status === "completed"
+            ? "This order is already fully sold"
+            : "Order must be accepted before payment",
       });
     }
 
@@ -45,7 +54,7 @@ const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    const razorpayOrder = await razorpay.orders.create({
+    const razorpayOrder = await getRazorpay().orders.create({
       amount: Math.round(order.totalAmount * 100),
       currency: "INR",
       receipt: `order_${order._id}`,

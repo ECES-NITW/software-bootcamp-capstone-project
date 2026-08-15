@@ -12,7 +12,10 @@ function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async () => {
+    const registered = Boolean(location.state?.registered);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
         setError("");
 
         if (!email || !password) {
@@ -41,9 +44,14 @@ function LoginPage() {
 
     return (
         <div className="auth-page">
-            <div className="auth-card">
+            <form className="auth-card" onSubmit={handleLogin}>
                 <h1 className="auth-title">Sign in</h1>
 
+                {registered && !error && (
+                    <p style={{ color: "var(--primary)", fontSize: "0.9rem", marginBottom: "8px" }}>
+                        Account created successfully. Please sign in.
+                    </p>
+                )}
                 {error && <p className="auth-error">{error}</p>}
 
                 <label className="auth-field">
@@ -53,6 +61,7 @@ function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@college.edu"
+                        autoComplete="email"
                     />
                 </label>
 
@@ -63,18 +72,18 @@ function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                        autoComplete="current-password"
                     />
                 </label>
 
-                <button className="auth-btn" onClick={handleLogin} disabled={loading}>
+                <button type="submit" className="auth-btn" disabled={loading}>
                     {loading ? "Signing in..." : "Sign in"}
                 </button>
 
                 <p className="auth-switch">
                     New here? <Link to="/register">Create an account</Link>
                 </p>
-            </div>
+            </form>
         </div>
     );
 }

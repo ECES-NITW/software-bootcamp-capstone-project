@@ -243,12 +243,45 @@ const updateOrderStatus = async ({ msgId, conversationId, status, userId }) => {
   await message.save();
   await order.save();
 
+  if (status === "accepted") {
+    await rejectCompetingOrders(order);
+  }
+
   const label = REQUEST_LABELS[order.orderType] || "Request";
   await Conversation.findByIdAndUpdate(conversationId, {
     lastMessage: `${label} ${status}`,
   });
 
   return { message, order };
+};
+
+const rejectCompetingOrders = async (order) => {
+  const siblings = await Order.find({
+    product: order.product,
+    status: "pending",
+    _id: { $ne: order._id },
+  }).select("_id");
+  if (siblings.length === 0) return;
+
+  const ids = siblings.map((sibling) => sibling._id);
+  await Order.updateMany({ _id: { $in: ids } }, { status: "rejected" });
+  await Message.updateMany(
+    { orderId: { $in: ids }, type: "order", offerStatus: "none" },
+    { offerStatus: "declined" },
+  );
+};
+
+const syncOrderRequestMessage = async (order, status) => {
+  const message = await Message.findOne({ orderId: order._id, type: "order" });
+  if (!message || message.offerStatus !== "none") return;
+
+  message.offerStatus = status;
+  await message.save();
+
+  const label = REQUEST_LABELS[order.orderType] || "Request";
+  await Conversation.findByIdAndUpdate(message.conversationId, {
+    lastMessage: `${label} ${status}`,
+  });
 };
 
 const getAgreedPrice = async (req, res) => {
@@ -290,17 +323,17 @@ const getConversations = async (req, res) => {
       .lean();
 
     const conversations = chats
-      .filter((chat) => chat.buyerId && chat.sellerId && chat.productId)
+      .filter((chat) => chat.buyerId && chat.sellerId)
       .map((chat) => ({
         ...chat,
 
         buyer: chat.buyerId,
         seller: chat.sellerId,
-        product: chat.productId,
+        product: chat.productId ?? null,
 
         buyerId: chat.buyerId._id,
         sellerId: chat.sellerId._id,
-        productId: chat.productId._id,
+        productId: chat.productId?._id ?? null,
 
         role: chat.buyerId._id.equals(userId) ? "buyer" : "seller",
       }));
@@ -323,6 +356,8 @@ module.exports = {
   addMessage,
   updateOfferStatus,
   updateOrderStatus,
+  rejectCompetingOrders,
+  syncOrderRequestMessage,
   getAgreedPrice,
   getConversations,
 };

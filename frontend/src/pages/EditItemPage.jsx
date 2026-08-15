@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCreateProduct } from "../hooks/useProducts";
+import { useNavigate, useParams } from "react-router-dom";
+import { useProduct, useUpdateProduct } from "../hooks/useProducts";
+import useUser from "../hooks/useUser";
 
 const CATEGORIES = [
     "Electronics",
@@ -30,26 +31,30 @@ const LISTING_TYPES = [
 
 const MAX_IMAGES = 5;
 
-function PostItemPage() {
+function EditItemForm({ item }) {
+    const { id } = useParams();
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
-    const createProduct = useCreateProduct();
 
-    const [types, setTypes] = useState(["sell"]);
+    const updateProduct = useUpdateProduct();
 
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("");
-    const [condition, setCondition] = useState("");
-    const [location, setLocation] = useState("");
-    const [images, setImages] = useState([]);
-    const [dragActive, setDragActive] = useState(false);
-
-    const [price, setPrice] = useState("");
-    const [rentPrice, setRentPrice] = useState("");
-    const [deposit, setDeposit] = useState("");
-    const [exchangePreferences, setExchangePreferences] = useState("");
-
+    const [types, setTypes] = useState(() =>
+        (item.types ?? []).filter((t) =>
+            LISTING_TYPES.some((entry) => entry.value === t),
+        ),
+    );
+    const [title, setTitle] = useState(item.title ?? "");
+    const [description, setDescription] = useState(item.description ?? "");
+    const [category, setCategory] = useState(item.category ?? "");
+    const [condition, setCondition] = useState(item.condition ?? "");
+    const [location, setLocation] = useState(item.location ?? "");
+    const [price, setPrice] = useState(item.price ?? "");
+    const [rentPrice, setRentPrice] = useState(item.rentPrice ?? "");
+    const [deposit, setDeposit] = useState(item.deposit ?? "");
+    const [exchangePreferences, setExchangePreferences] = useState(
+        item.exchangePreferences ?? "",
+    );
+    const [newImages, setNewImages] = useState([]);
     const [error, setError] = useState("");
 
     const isSelected = (type) => types.includes(type);
@@ -73,65 +78,25 @@ function PostItemPage() {
         const picked = Array.from(fileList).filter((file) =>
             file.type.startsWith("image/"),
         );
+        if (picked.length === 0) return;
 
-        if (picked.length === 0) {
-            return;
-        }
-
-        setImages((current) => {
+        setNewImages((current) => {
             const room = MAX_IMAGES - current.length;
-
-            if (room <= 0) {
-                return current;
-            }
-
+            if (room <= 0) return current;
             const added = picked.slice(0, room).map((file) => ({
                 file,
                 url: URL.createObjectURL(file),
             }));
-
             return [...current, ...added];
         });
     };
 
-    const removeImage = (index) => {
-        setImages((current) => {
+    const removeNewImage = (index) => {
+        setNewImages((current) => {
             const target = current[index];
-
-            if (target) {
-                URL.revokeObjectURL(target.url);
-            }
-
+            if (target) URL.revokeObjectURL(target.url);
             return current.filter((_, position) => position !== index);
         });
-    };
-
-    const handleDrag = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
-        }
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        if (e.dataTransfer.files?.length) {
-            addFiles(e.dataTransfer.files);
-        }
-    };
-
-    const handleFileChange = (e) => {
-        if (e.target.files?.length) {
-            addFiles(e.target.files);
-        }
-        e.target.value = "";
     };
 
     const handleSubmit = async (e) => {
@@ -162,19 +127,15 @@ function PostItemPage() {
         formData.append("description", description);
         formData.append("category", category);
         formData.append("condition", condition);
-
         if (location) {
             formData.append("location", location);
         }
-
         types.forEach((type) => formData.append("types", type));
-
         if (isSelected("sell")) {
             formData.append("price", Number(price));
         }
         if (isSelected("rent")) {
             formData.append("rentPrice", Number(rentPrice));
-
             if (deposit !== "") {
                 formData.append("deposit", Number(deposit));
             }
@@ -182,14 +143,13 @@ function PostItemPage() {
         if (isSelected("exchange")) {
             formData.append("exchangePreferences", exchangePreferences);
         }
-
-        images.forEach(({ file }) => formData.append("images", file));
+        newImages.forEach(({ file }) => formData.append("images", file));
 
         try {
-            const product = await createProduct.mutateAsync(formData);
-            navigate(`/item/${product._id}`);
+            await updateProduct.mutateAsync({ id, formData });
+            navigate(`/item/${id}`);
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to post item.");
+            setError(err.response?.data?.message || "Failed to update item.");
         }
     };
 
@@ -203,10 +163,10 @@ function PostItemPage() {
                         fontWeight: 700,
                     }}
                 >
-                    Post an Item
+                    Edit Listing
                 </h1>
                 <p style={{ color: "var(--text-muted)" }}>
-                    Share what you have with other students on campus.
+                    Update the details of your listing.
                 </p>
             </div>
 
@@ -225,7 +185,6 @@ function PostItemPage() {
                         <input
                             type="text"
                             className="formInput"
-                            placeholder="e.g. TI-84 Graphing Calculator"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                         />
@@ -236,7 +195,6 @@ function PostItemPage() {
                         <textarea
                             className="formTextarea"
                             rows="4"
-                            placeholder="Condition, what is included, pickup spots..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         ></textarea>
@@ -244,15 +202,6 @@ function PostItemPage() {
 
                     <div className="formGroup" style={{ marginBottom: 0, gap: "6px" }}>
                         <label className="formLabel">Listing Type</label>
-                        <span
-                            style={{
-                                fontSize: "0.78rem",
-                                color: "var(--text-muted)",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            You can choose multiple options.
-                        </span>
                         <div className="typeToggleRow">
                             {LISTING_TYPES.map(({ value, label }) => (
                                 <button
@@ -276,7 +225,6 @@ function PostItemPage() {
                                 <input
                                     type="number"
                                     className="formInput"
-                                    placeholder="What you want for it"
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     min="0"
@@ -300,7 +248,6 @@ function PostItemPage() {
                                     <input
                                         type="number"
                                         className="formInput"
-                                        placeholder="Weekly rate"
                                         value={rentPrice}
                                         onChange={(e) => setRentPrice(e.target.value)}
                                         min="0"
@@ -311,7 +258,6 @@ function PostItemPage() {
                                     <input
                                         type="number"
                                         className="formInput"
-                                        placeholder="Refundable, optional"
                                         value={deposit}
                                         onChange={(e) => setDeposit(e.target.value)}
                                         min="0"
@@ -329,9 +275,10 @@ function PostItemPage() {
                                 <input
                                     type="text"
                                     className="formInput"
-                                    placeholder="e.g. Apple Pencil (2nd gen), Mechanical Keyboard"
                                     value={exchangePreferences}
-                                    onChange={(e) => setExchangePreferences(e.target.value)}
+                                    onChange={(e) =>
+                                        setExchangePreferences(e.target.value)
+                                    }
                                 />
                             </div>
                         </div>
@@ -382,26 +329,31 @@ function PostItemPage() {
                         <input
                             type="text"
                             className="formInput"
-                            placeholder="Optional, defaults to NIT Warangal"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
                         />
                     </div>
 
                     <div className="formGroup" style={{ marginBottom: 0 }}>
-                        <label className="formLabel">
-                            Photographs (optional, up to {MAX_IMAGES})
-                        </label>
-
-                        {images.length > 0 && (
+                        <label className="formLabel">Photographs</label>
+                        {(item.images?.length ?? 0) > 0 && newImages.length === 0 && (
                             <div className="imagePreviewGrid">
-                                {images.map((image, index) => (
+                                {item.images.map((image) => (
+                                    <div className="imagePreview" key={image.public_id}>
+                                        <img src={image.url} alt={item.title} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {newImages.length > 0 && (
+                            <div className="imagePreviewGrid">
+                                {newImages.map((image, index) => (
                                     <div className="imagePreview" key={image.url}>
                                         <img src={image.url} alt={`Upload ${index + 1}`} />
                                         <button
                                             type="button"
                                             className="imagePreviewRemove"
-                                            onClick={() => removeImage(index)}
+                                            onClick={() => removeNewImage(index)}
                                             aria-label={`Remove image ${index + 1}`}
                                         >
                                             x
@@ -410,31 +362,26 @@ function PostItemPage() {
                                 ))}
                             </div>
                         )}
-
-                        {images.length < MAX_IMAGES && (
+                        {newImages.length < MAX_IMAGES && (
                             <div
                                 className="dragDropZone"
-                                onDragEnter={handleDrag}
-                                onDragOver={handleDrag}
-                                onDragLeave={handleDrag}
-                                onDrop={handleDrop}
                                 onClick={() => fileInputRef.current.click()}
-                                style={{
-                                    borderColor: dragActive
-                                        ? "var(--primary)"
-                                        : "var(--border-color)",
-                                }}
                             >
                                 <input
                                     type="file"
                                     ref={fileInputRef}
                                     accept="image/*"
                                     multiple
-                                    onChange={handleFileChange}
+                                    onChange={(e) => {
+                                        if (e.target.files?.length) {
+                                            addFiles(e.target.files);
+                                        }
+                                        e.target.value = "";
+                                    }}
                                     style={{ display: "none" }}
                                 />
                                 <p>
-                                    Drag and drop photos here, or <strong>browse files</strong>
+                                    Click to choose new photos
                                 </p>
                                 <p
                                     style={{
@@ -442,24 +389,92 @@ function PostItemPage() {
                                         color: "var(--text-muted)",
                                     }}
                                 >
-                                    JPG or PNG, {MAX_IMAGES - images.length} remaining
+                                    Uploading new photos replaces the current ones. Leave
+                                    empty to keep them.
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={createProduct.isPending}
-                        style={{ width: "100%" }}
-                    >
-                        {createProduct.isPending ? "Posting..." : "Post"}
-                    </button>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={updateProduct.isPending}
+                            style={{ flex: 1 }}
+                        >
+                            {updateProduct.isPending ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn"
+                            style={{
+                                flex: 1,
+                                background: "var(--bg-secondary)",
+                                border: "1.5px solid var(--border-color)",
+                                color: "var(--text-muted)",
+                            }}
+                            onClick={() => navigate(`/item/${id}`)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     );
 }
 
-export default PostItemPage;
+function EditItemPage() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+
+    const { data: user } = useUser();
+    const { data: item, isLoading } = useProduct(id);
+
+    if (isLoading) {
+        return (
+            <div style={{ display: "flex", justifyContent: "center", padding: "64px" }}>
+                <div className="statusIndicator">
+                    <span className="statusDot statusDot-active"></span>
+                    <span>Loading listing...</span>
+                </div>
+            </div>
+        );
+    }
+
+    const sellerId = item?.seller?._id ?? item?.seller;
+    const isOwner = Boolean(
+        user && sellerId && String(sellerId) === String(user.user_id),
+    );
+
+    if (!item || !isOwner) {
+        return (
+            <div
+                className="glassCard"
+                style={{
+                    textAlign: "center",
+                    padding: "48px 24px",
+                    maxWidth: "480px",
+                    margin: "40px auto",
+                }}
+            >
+                <h3>Cannot Edit Listing</h3>
+                <p style={{ color: "var(--text-muted)" }}>
+                    This listing does not exist or you are not its owner.
+                </p>
+                <button
+                    className="btn"
+                    style={{ marginTop: "16px" }}
+                    onClick={() => navigate("/feed")}
+                >
+                    Back to Marketplace
+                </button>
+            </div>
+        );
+    }
+
+    return <EditItemForm key={item._id} item={item} />;
+}
+
+export default EditItemPage;

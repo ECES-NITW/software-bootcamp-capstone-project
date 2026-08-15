@@ -3,6 +3,10 @@ const User = require("../models/User");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
 const Conversation = require("../models/Conversation");
+const {
+  rejectCompetingOrders,
+  syncOrderRequestMessage,
+} = require("./chatController");
 
 const createOrder = async (req, res) => {
   try {
@@ -25,7 +29,6 @@ const createOrder = async (req, res) => {
     const requiredListingType = orderType === "buy" ? "sell" : orderType;
 
     const product = await Product.findById(productId);
-    console.log("PRODUCT STATUS:", product.status);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -79,9 +82,19 @@ const createOrder = async (req, res) => {
             .select("currentOffer")
         : null;
 
+    let rentTotal = product.rentPrice;
+    if (orderType === "rent" && rentalStartDate && rentalEndDate) {
+      const durationMs = new Date(rentalEndDate) - new Date(rentalStartDate);
+      if (Number.isFinite(durationMs) && durationMs > 0) {
+        const days = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24)));
+        rentTotal = (product.rentPrice / 7) * days + (product.deposit || 0);
+        rentTotal = Math.round(rentTotal * 100) / 100;
+      }
+    }
+
     const amountByOrderType = {
       buy: conversation?.currentOffer ?? product.price,
-      rent: product.rentPrice,
+      rent: rentTotal,
       exchange: 0,
     };
 
@@ -118,7 +131,7 @@ const getAllMyOrders = async (req, res) => {
     const buyer = req.user.id;
     const orders = await Order.find({ buyer })
       .populate("product")
-      .populate("seller", "userName email")
+      .populate("seller", "userName email phoneNumber")
       .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
 
@@ -141,10 +154,6 @@ const acceptOrder = async (req, res) => {
     const { orderId } = req.params;
 
     const order = await Order.findById(orderId);
-    console.log("Order ID:", orderId);
-    console.log("Order:", order);
-    console.log(req.params);
-    console.log(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -167,12 +176,23 @@ const acceptOrder = async (req, res) => {
       });
     }
 
+    const product = await Product.findById(order.product);
+    if (!product || product.status !== "Available") {
+      return res.status(400).json({
+        success: false,
+        message: "Product is no longer available",
+      });
+    }
+
     order.status = "accepted";
     await order.save();
 
     await Product.findByIdAndUpdate(order.product, {
-      status: "Reserved",
+      status: order.orderType === "rent" ? "Reserved" : "Sold",
     });
+
+    await rejectCompetingOrders(order);
+    await syncOrderRequestMessage(order, "accepted");
 
     return res.status(200).json({
       success: true,
@@ -192,7 +212,7 @@ const getReceivedOrders = async (req, res) => {
     const seller = req.user.id;
 
     const orders = await Order.find({ seller })
-      .populate("buyer", "userName email profilePic")
+      .populate("buyer", "userName email profilePic phoneNumber")
       .populate("product")
       .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
@@ -239,6 +259,9 @@ const rejectOrder = async (req, res) => {
 
     order.status = "rejected";
     await order.save();
+
+    await syncOrderRequestMessage(order, "declined");
+
     return res.status(200).json({
       success: true,
       message: "Order rejected successfully",
@@ -314,15 +337,23 @@ const completeOrder = async (req, res) => {
       });
     }
 
-    if (order.status !== "accepted") {
+    if (!["pending", "accepted"].includes(order.status)) {
       return res.status(400).json({
         success: false,
-        message: "Only accepted orders can be completed",
+        message: "Only pending or accepted orders can be completed",
       });
     }
 
+    const wasPending = order.status === "pending";
     order.status = "completed";
+    order.paymentStatus = "paid";
     await order.save();
+
+    if (wasPending) {
+      await rejectCompetingOrders(order);
+    }
+    await syncOrderRequestMessage(order, "accepted");
+
     const productStatus = order.orderType === "rent" ? "Available" : "Sold";
 
     await Product.findByIdAndUpdate(order.product, {

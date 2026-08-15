@@ -162,7 +162,7 @@ function ChatPage() {
                                             <div className="chatItemName">
                                                 {name}
                                             </div>
-                                            {product?.title && (
+                                            {product?.title ? (
                                                 <div
                                                     className="chatItemMessage"
                                                     style={{
@@ -170,6 +170,15 @@ function ChatPage() {
                                                     }}
                                                 >
                                                     {product.title}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="chatItemMessage"
+                                                    style={{
+                                                        fontStyle: "italic",
+                                                    }}
+                                                >
+                                                    Listing removed
                                                 </div>
                                             )}
                                             <div className="chatItemMessage">
@@ -231,7 +240,7 @@ function ChatPage() {
                                     >
                                         {activeOther?.userName ?? "User"}
                                     </h3>
-                                    {activeProduct?.title && (
+                                    {activeProduct?.title ? (
                                         <span
                                             style={{
                                                 color: "var(--text-muted)",
@@ -240,8 +249,18 @@ function ChatPage() {
                                         >
                                             {activeProduct.title}
                                             {activeProduct.price != null
-                                                ? ` · $${activeProduct.price}`
+                                                ? ` · ₹${activeProduct.price}`
                                                 : ""}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            style={{
+                                                color: "var(--text-muted)",
+                                                fontSize: "0.72rem",
+                                                fontStyle: "italic",
+                                            }}
+                                        >
+                                            Listing removed
                                         </span>
                                     )}
                                 </div>

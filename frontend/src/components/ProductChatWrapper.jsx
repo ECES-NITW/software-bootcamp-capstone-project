@@ -38,7 +38,7 @@ const ProductChatWrapper = ({ productId, productInfo, contactInfo, onClose }) =>
                             }}
                         >
                             {productTitle}
-                            {productPrice != null ? ` · $${productPrice}` : ""}
+                            {productPrice != null ? ` · ₹${productPrice}` : ""}
                         </span>
                     )}
                 </div>

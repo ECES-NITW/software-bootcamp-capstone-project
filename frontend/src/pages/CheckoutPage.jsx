@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useProduct } from "../hooks/useProducts";
+import { useAgreedPrice } from "../hooks/useChat";
 import api from "../api/api";
 
 function CheckoutPage() {
@@ -19,10 +20,13 @@ function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: item, isLoading, isError } = useProduct(id);
+  const { data: agreedPrice } = useAgreedPrice(id);
 
   const rentPrice = item ? Number(item.rentPrice ?? item.price ?? 0) : 0;
   const depositPrice = item ? Number(item.deposit ?? 0) : 0;
-  const buyPrice = item ? Number(item.price ?? 0) : 0;
+  const listPrice = item ? Number(item.price ?? 0) : 0;
+  const hasAgreedPrice = agreedPrice != null;
+  const buyPrice = hasAgreedPrice ? Number(agreedPrice) : listPrice;
 
   const totalAmount =
     orderType === "rent" ? (rentPrice / 7) * days + depositPrice : buyPrice;
@@ -89,76 +93,17 @@ function CheckoutPage() {
         alert(
           "Rental order placed successfully! Waiting for the seller to accept.",
         );
-
-        navigate("/orders");
-        return;
+      } else if (orderType === "exchange") {
+        alert(
+          "Exchange request placed successfully! Waiting for the seller to accept.",
+        );
+      } else {
+        alert(
+          "Purchase request placed! You can pay from My Orders once the seller accepts.",
+        );
       }
 
-      const orderId = order._id;
-
-      const paymentResponse = await api.post(`/payments/create/${orderId}`);
-
-      const { razorpayOrderId, amount, currency, key } = paymentResponse.data;
-
-      if (!window.Razorpay) {
-        throw new Error("Razorpay SDK is not loaded");
-      }
-
-      const options = {
-        key,
-        amount,
-        currency,
-        name: "Campus Marketplace",
-        description:
-          orderType === "exchange"
-            ? "Exchange Request"
-            : "Secure Purchase Payment",
-        order_id: razorpayOrderId,
-
-        handler: async function (paymentResponse) {
-          try {
-            const verifyResponse = await api.post("/payments/verify", {
-              orderId,
-
-              razorpay_payment_id: paymentResponse.razorpay_payment_id,
-
-              razorpay_order_id: paymentResponse.razorpay_order_id,
-
-              razorpay_signature: paymentResponse.razorpay_signature,
-            });
-
-            if (verifyResponse.data.success) {
-              if (orderType === "buy") {
-                alert("Purchase order placed successfully!");
-              } else {
-                alert(
-                  "Exchange request placed successfully! Waiting for the seller to accept.",
-                );
-              }
-
-              navigate("/orders");
-            }
-          } catch (error) {
-            console.error("Payment verification failed:", error);
-
-            alert(
-              error.response?.data?.message || "Payment verification failed",
-            );
-          }
-        },
-
-        theme: {
-          color: "#7f8f80",
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-
-      razorpay.on("payment.failed", (response) => {
-        alert(response.error?.description || "Payment failed");
-      });
-
-      razorpay.open();
+      navigate("/orders");
     } catch (error) {
       console.error("Checkout error:", error);
 
@@ -403,9 +348,22 @@ function CheckoutPage() {
                     color: "var(--text-muted)",
                   }}
                 >
-                  <span>Purchase Amount</span>
+                  <span>
+                    {hasAgreedPrice ? "Agreed Price" : "Purchase Amount"}
+                  </span>
 
                   <span style={{ color: "var(--text-main)" }}>
+                    {hasAgreedPrice && listPrice !== buyPrice && (
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          textDecoration: "line-through",
+                          marginRight: "8px",
+                        }}
+                      >
+                        ₹{listPrice.toFixed(2)}
+                      </span>
+                    )}
                     ₹{buyPrice.toFixed(2)}
                   </span>
                 </div>
@@ -469,7 +427,7 @@ function CheckoutPage() {
                 ? "⏳ Processing..."
                 : orderType === "rent"
                   ? `📩 Submit Rental Request`
-                  : `🔒 Pay ₹${totalAmount.toFixed(2)}`}
+                  : `🔒 Place Purchase Request (₹${totalAmount.toFixed(2)})`}
             </button>
           </form>
         </div>
