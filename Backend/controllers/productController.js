@@ -321,6 +321,10 @@ const updateProduct = async (req, res) => {
     product.condition = req.body.condition || product.condition;
     product.location = req.body.location || product.location;
 
+    if (["Available", "Sold"].includes(req.body.status)) {
+      product.status = req.body.status;
+    }
+
     const typeFields = [
       { field: "price", type: "sell", value: toNumber(req.body.price) },
       { field: "rentPrice", type: "rent", value: toNumber(req.body.rentPrice) },

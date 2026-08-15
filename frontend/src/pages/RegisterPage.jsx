@@ -11,7 +11,8 @@ function RegisterPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const handleRegister = async () => {
+    const handleRegister = async (e) => {
+        e.preventDefault();
         setError("");
 
         if (!name || !email || !phoneNumber || !password) {
@@ -30,7 +31,7 @@ function RegisterPage() {
         setLoading(true);
         try {
             await api.post(`/auth/register`, { userName: name, email, phoneNumber, password });
-            navigate("/login");
+            navigate("/login", { state: { registered: true } });
         } catch (err) {
             setError(err.response?.data?.message || "Could not reach the server.");
             console.error(err);
@@ -41,7 +42,7 @@ function RegisterPage() {
 
     return (
         <div className="auth-page">
-            <div className="auth-card">
+            <form className="auth-card" onSubmit={handleRegister}>
                 <h1 className="auth-title">Create account</h1>
 
                 {error && <p className="auth-error">{error}</p>}
@@ -53,6 +54,7 @@ function RegisterPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Your name"
+                        autoComplete="name"
                     />
                 </label>
 
@@ -63,6 +65,7 @@ function RegisterPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@student.nitw.ac.in"
+                        autoComplete="email"
                     />
                 </label>
 
@@ -74,6 +77,7 @@ function RegisterPage() {
                         onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
                         placeholder="10-digit phone number"
                         maxLength={10}
+                        autoComplete="tel"
                     />
                 </label>
 
@@ -84,18 +88,18 @@ function RegisterPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="At least 6 characters"
-                        onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                        autoComplete="new-password"
                     />
                 </label>
 
-                <button className="auth-btn" onClick={handleRegister} disabled={loading}>
+                <button type="submit" className="auth-btn" disabled={loading}>
                     {loading ? "Creating account..." : "Create account"}
                 </button>
 
                 <p className="auth-switch">
                     Already have an account? <Link to="/login">Sign in</Link>
                 </p>
-            </div>
+            </form>
         </div>
     );
 }

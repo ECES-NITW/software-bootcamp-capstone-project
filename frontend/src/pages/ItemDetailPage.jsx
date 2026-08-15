@@ -272,14 +272,23 @@ function ItemDetailPage() {
                   {isLoggedIn ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {isOwnProduct ? (
-                        <button
-                          className="btn"
-                          style={{ width: '100%', background: '#fee2e2', border: '1.5px solid #fca5a5', color: '#b91c1c' }}
-                          onClick={handleDelete}
-                          disabled={deleteMutation.isPending}
-                        >
-                          {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Listing'}
-                        </button>
+                        <>
+                          <button
+                            className="btn"
+                            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontWeight: 700 }}
+                            onClick={() => navigate(`/edit-item/${id}`)}
+                          >
+                            Edit Listing
+                          </button>
+                          <button
+                            className="btn"
+                            style={{ width: '100%', background: '#fee2e2', border: '1.5px solid #fca5a5', color: '#b91c1c' }}
+                            onClick={handleDelete}
+                            disabled={deleteMutation.isPending}
+                          >
+                            {deleteMutation.isPending ? 'Deleting...' : '🗑️ Delete Listing'}
+                          </button>
+                        </>
                       ) : (
                         <>
                           {item.status === "Available" && (

@@ -42,7 +42,7 @@ const messageSchema = new mongoose.Schema(
         },
         offerStatus: {
             type: String,
-            enum: ["none", "accepted", "declined"],
+            enum: ["none", "accepted", "declined", "cancelled"],
             default: "none",
         },
     },

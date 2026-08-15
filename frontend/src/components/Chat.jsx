@@ -11,6 +11,39 @@ import {
 
 const sentOrderRequests = new Set();
 
+const formatMessageTime = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const time = date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+    const today = new Date();
+    const isToday =
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+    return isToday ? time : `${date.toLocaleDateString()} ${time}`;
+};
+
+const MessageTime = ({ value }) => {
+    const formatted = formatMessageTime(value);
+    if (!formatted) return null;
+    return (
+        <div
+            style={{
+                fontSize: "0.68rem",
+                opacity: 0.65,
+                marginTop: "4px",
+                textAlign: "right",
+            }}
+        >
+            {formatted}
+        </div>
+    );
+};
+
 const Chat = ({ conversationId, product, role, pendingRequest }) => {
     const queryClient = useQueryClient();
     const { data: user } = useUser();
@@ -27,15 +60,19 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
     const requestMutation = useCreateOrderRequest();
 
     const addMessage = (msg) => {
+        const stamped = {
+            ...msg,
+            createdAt: msg.createdAt ?? new Date().toISOString(),
+        };
         queryClient.setQueryData(
             ["chat_messages", conversationId],
             (prev = []) => {
                 // Never add the same message twice (e.g. server echoes)
-                const id = msg.msgId ?? msg.id;
+                const id = stamped.msgId ?? stamped.id;
                 if (id && prev.some((m) => (m.msgId ?? m.id) === id)) {
                     return prev;
                 }
-                return [...prev, msg];
+                return [...prev, stamped];
             },
         );
         queryClient.setQueryData(["chat_conversations"], (prev) => {
@@ -366,6 +403,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                         Not delivered
                     </div>
                 )}
+                <MessageTime value={msg.createdAt} />
             </div>
         );
     };
@@ -433,6 +471,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                         Not delivered
                     </div>
                 )}
+                <MessageTime value={msg.createdAt} />
             </div>
         );
     };
@@ -471,6 +510,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                                         Not delivered
                                     </div>
                                 )}
+                                <MessageTime value={msg.createdAt} />
                             </div>
                         );
                     })

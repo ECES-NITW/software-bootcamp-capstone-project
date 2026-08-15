@@ -9,6 +9,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import ChatPage from './pages/ChatPage';
 import LookingForPage from './pages/LookingForPage';
 import PostItemsPage from './pages/PostItemsPage';
+import EditItemPage from './pages/EditItemPage';
 import ProfilePage from './pages/ProfilePage';
 import OrdersPage from './pages/OrdersPage';
 import ReceivedOrdersPage from './pages/ReceivedOrdersPage';
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
           { path: 'checkout/:id', element: <CheckoutPage /> },
           { path: 'chat', element: <ChatPage /> },
           { path: 'post-item', element: <PostItemsPage /> },
+          { path: 'edit-item/:id', element: <EditItemPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'orders', element: <OrdersPage /> },
           { path: 'received-orders', element: <ReceivedOrdersPage /> },

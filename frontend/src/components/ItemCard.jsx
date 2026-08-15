@@ -1,9 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import useUser from "../hooks/useUser";
-import { listingPrice, PLACEHOLDER_IMAGE } from "../hooks/useProducts";
+import {
+    listingPrice,
+    PLACEHOLDER_IMAGE,
+    useUpdateProduct,
+} from "../hooks/useProducts";
 import { useWishlistIds, useToggleWishlist } from "../hooks/useWishlist";
 
 const TYPE_PRIORITY = ["sell", "rent", "exchange"];
+
+const STATUS_BADGE_STYLES = {
+    Sold: { background: "#3f3f46", color: "#ffffff", borderColor: "#3f3f46" },
+    Reserved: {
+        background: "#fef3c7",
+        color: "#b45309",
+        borderColor: "#fcd34d",
+    },
+};
 
 const ItemCard = ({ product }) => {
     const navigate = useNavigate();
@@ -18,8 +31,15 @@ const ItemCard = ({ product }) => {
     const { data: user } = useUser();
     const { data: wishlistIds } = useWishlistIds();
     const toggleWishlistMutation = useToggleWishlist();
+    const updateProductMutation = useUpdateProduct();
 
     const isWishlisted = Boolean(wishlistIds?.includes(String(product._id)));
+    const isOwner = Boolean(
+        user &&
+            String(product.seller?._id ?? product.seller) ===
+                String(user.user_id),
+    );
+    const status = product.status ?? "Available";
 
     const openDetail = () => navigate(`/item/${product._id}`);
     const openChat = (e) => {
@@ -29,6 +49,15 @@ const ItemCard = ({ product }) => {
     const toggleWishlist = (e) => {
         e.stopPropagation();
         toggleWishlistMutation.mutate(product._id);
+    };
+    const toggleSold = (e) => {
+        e.stopPropagation();
+        const formData = new FormData();
+        formData.append(
+            "status",
+            status === "Available" ? "Sold" : "Available",
+        );
+        updateProductMutation.mutate({ id: product._id, formData });
     };
 
     const renderPrimaryPrice = () => {
@@ -60,8 +89,19 @@ const ItemCard = ({ product }) => {
                     src={image || PLACEHOLDER_IMAGE}
                     alt={product.title}
                 />
-                {product.condition && (
-                    <span className="cardBadge badge-rent">{product.condition}</span>
+                {status !== "Available" ? (
+                    <span
+                        className="cardBadge"
+                        style={STATUS_BADGE_STYLES[status]}
+                    >
+                        {status}
+                    </span>
+                ) : (
+                    product.condition && (
+                        <span className="cardBadge badge-rent">
+                            {product.condition}
+                        </span>
+                    )
                 )}
             </div>
             <div className="cardBody">
@@ -73,30 +113,53 @@ const ItemCard = ({ product }) => {
                 <div className="cardFooter">
                     <div className="cardPrice">{renderPrimaryPrice()}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        {user && (
+                        {isOwner ? (
                             <button
-                                className="cardChatBtn"
-                                onClick={toggleWishlist}
-                                disabled={toggleWishlistMutation.isPending}
-                                title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                                style={
-                                    isWishlisted
-                                        ? { background: "rgba(220, 38, 38, 0.08)", borderColor: "#dc2626" }
-                                        : undefined
-                                }
+                                className="btn"
+                                onClick={toggleSold}
+                                disabled={updateProductMutation.isPending}
+                                style={{
+                                    padding: "6px 14px",
+                                    fontSize: "0.8rem",
+                                    background: "var(--bg-secondary)",
+                                    border: "1.5px solid var(--border-color)",
+                                    color: "var(--primary)",
+                                }}
                             >
-                                {isWishlisted ? "❤️" : "🤍"}
+                                {updateProductMutation.isPending
+                                    ? "Updating..."
+                                    : status === "Available"
+                                      ? "Mark Sold"
+                                      : "Mark Available"}
                             </button>
+                        ) : (
+                            <>
+                                {user && (
+                                    <button
+                                        className="cardChatBtn"
+                                        onClick={toggleWishlist}
+                                        disabled={toggleWishlistMutation.isPending}
+                                        title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                                        aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                                        style={
+                                            isWishlisted
+                                                ? { background: "rgba(220, 38, 38, 0.08)", borderColor: "#dc2626" }
+                                                : undefined
+                                        }
+                                    >
+                                        {isWishlisted ? "❤️" : "🤍"}
+                                    </button>
+                                )}
+                                <button
+                                    className="cardChatBtn"
+                                    onClick={openChat}
+                                    title="Chat with seller"
+                                    aria-label="Chat with seller"
+                                >
+                                    💬
+                                </button>
+                            </>
                         )}
-                        <button
-                            className="cardChatBtn"
-                            onClick={openChat}
-                            title="Chat with seller"
-                            aria-label="Chat with seller"
-                        >
-                            💬
-                        </button>
                     </div>
                 </div>
                 {secondaryTypes.length > 0 && (

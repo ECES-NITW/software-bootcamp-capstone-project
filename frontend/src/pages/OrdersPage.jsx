@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useUserOrders, useReceivedOrders } from '../hooks/useCheckout';
+import { useUpdateProduct } from '../hooks/useProducts';
 
 const ORDER_TYPE_LABELS = { buy: 'Sell', rent: 'Rent', exchange: 'Exchange' };
 
@@ -13,13 +14,17 @@ const rentalDays = (order) => {
 
 const orderAmountLabel = (order) => {
   if (order.orderType === 'exchange') return 'EXCHANGE';
-  return order.orderType === 'rent' ? 'RENTAL RATE' : order.agreedPrice != null ? 'AGREED PRICE' : 'PURCHASE PRICE';
+  return order.orderType === 'rent' ? 'RENTAL TOTAL' : order.agreedPrice != null ? 'AGREED PRICE' : 'PURCHASE PRICE';
 };
 
 const orderAmount = (order) => {
   if (order.orderType === 'exchange') return order.swapProduct?.title ? `For ${order.swapProduct.title}` : 'Swap requested';
-  const amount = `₹${Number(order.totalAmount ?? 0).toFixed(2)}`;
-  return order.orderType === 'rent' ? `${amount} / week` : amount;
+  return `₹${Number(order.totalAmount ?? 0).toFixed(2)}`;
+};
+
+const contactLine = (person) => {
+  if (!person?.phoneNumber) return null;
+  return `${person.userName ?? 'Contact'} · ${person.phoneNumber}`;
 };
 
 function OrdersPage() {
@@ -30,6 +35,18 @@ function OrdersPage() {
     isLoading: isReceivedOrdersLoading,
     isError: isReceivedOrdersError,
   } = useReceivedOrders();
+  const updateProductMutation = useUpdateProduct();
+
+  const toggleProductStatus = (e, product) => {
+    e.stopPropagation();
+    if (!product?._id) return;
+    const formData = new FormData();
+    formData.append(
+      'status',
+      product.status === 'Available' ? 'Sold' : 'Available',
+    );
+    updateProductMutation.mutate({ id: product._id, formData });
+  };
 
   if (isLoading) {
     return (
@@ -86,6 +103,12 @@ function OrdersPage() {
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         Date: {new Date(order.createdAt).toLocaleDateString()}
                       </p>
+                      {['accepted', 'completed'].includes(order.status) &&
+                        contactLine(order.seller) && (
+                          <p style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>
+                            Seller: {contactLine(order.seller)}
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -163,6 +186,12 @@ function OrdersPage() {
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         Type: {ORDER_TYPE_LABELS[order.orderType] || order.orderType}
                       </p>
+                      {['accepted', 'completed'].includes(order.status) &&
+                        contactLine(order.buyer) && (
+                          <p style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>
+                            Buyer: {contactLine(order.buyer)}
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -181,6 +210,21 @@ function OrdersPage() {
                         {order.status}
                       </span>
                     </div>
+
+                    {order.product?._id && (
+                      <button
+                        className="btn"
+                        onClick={(e) => toggleProductStatus(e, order.product)}
+                        disabled={updateProductMutation.isPending}
+                        style={{ padding: '8px 16px', fontSize: '0.85rem', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
+                      >
+                        {updateProductMutation.isPending
+                          ? 'Updating...'
+                          : order.product.status === 'Available'
+                            ? 'Mark Sold'
+                            : 'Mark Available'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
