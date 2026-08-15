@@ -20,6 +20,6 @@ router.put(
   handleUpdateProfile,
 );
 
-router.get("/profile/:userId", handleGetContactInfo);
+router.get("/profile/:userId", authMiddleware, handleGetContactInfo);
 
 module.exports = router;

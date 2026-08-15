@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProducts } from '../hooks/useProducts';
+import { useInfiniteProducts } from '../hooks/useProducts';
 import useUser from '../hooks/useUser';
 import ItemCard from '../components/ItemCard';
 
@@ -12,12 +12,21 @@ function FeedPage() {
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
 
-  const { data: items, isLoading, isError } = useProducts({
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts({
     category,
     type,
     search,
     sort
   });
+
+  const items = data?.pages.flatMap((page) => page.products ?? []);
 
   // Only show other students' items, not your own listings
   const visibleItems = user
@@ -52,7 +61,7 @@ function FeedPage() {
       <div className="feedHeader">
         <div>
           <h1 style={{ fontFamily: 'Lora, serif', fontSize: '2rem', fontWeight: 700 }}>
-            🎒 Browse Channel
+            🎒 Browse Items
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
             Browse books, calculators, and lab gear listed by students.
@@ -110,18 +119,11 @@ function FeedPage() {
               Rentals
             </button>
             <button 
-              className={`toggleTab ${type === 'swap' ? 'active-swap' : ''}`} 
-              onClick={() => setType('swap')}
+              className={`toggleTab ${type === 'exchange' ? 'active-swap' : ''}`}
+              onClick={() => setType('exchange')}
               style={{ padding: '8px 24px' }}
             >
               Swaps
-            </button>
-            <button 
-              className="toggleTab disabled" 
-              disabled
-              style={{ padding: '8px 24px' }}
-            >
-              🔒 Buy (Sales)
             </button>
           </div>
 
@@ -144,11 +146,24 @@ function FeedPage() {
           <p style={{ color: 'var(--text-muted)' }}>No items found matching your filters.</p>
         </div>
       ) : (
-        <div className="grid">
-          {visibleItems?.map(product => (
-            <ItemCard key={product._id} product={product} />
-          ))}
-        </div>
+        <>
+          <div className="grid">
+            {visibleItems?.map(product => (
+              <ItemCard key={product._id} product={product} />
+            ))}
+          </div>
+          {hasNextPage && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

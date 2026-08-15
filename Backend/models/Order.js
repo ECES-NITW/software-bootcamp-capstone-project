@@ -26,6 +26,9 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    agreedPrice: {
+      type: Number,
+    },
     rentalStartDate: {
       type: Date,
     },
@@ -54,6 +57,15 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "paid", "refunded"],
       default: "pending",
+    },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
+      type: String,
     },
   },
   {

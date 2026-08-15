@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
 const Conversation = require("./models/Conversation");
-const { addMessage: sendMessage } = require("./controllers/chatController");
+const {
+    addMessage: sendMessage,
+    updateOfferStatus,
+    updateOrderStatus,
+} = require("./controllers/chatController");
 
 // True if userId is the buyer or seller on the conversation.
 const isParticipant = (conversation, userId) =>
@@ -24,6 +28,7 @@ function openChat(io) {
     io.on("connection", (socket) => {
         // Join a conversation room only if the user is a participant.
         socket.on("join_room", async (convo_id) => {
+            if (typeof convo_id !== "string") return;
             try {
                 const conversation = await Conversation.findById(convo_id);
                 if (isParticipant(conversation, socket.userId)) {
@@ -35,10 +40,12 @@ function openChat(io) {
         });
 
         socket.on("leave_room", (convo_id) => {
+            if (typeof convo_id !== "string") return;
             socket.leave(convo_id);
         });
 
         socket.on("message", async (data) => {
+            if (!data || typeof data !== "object" || typeof data.conversationId !== "string") return;
             try {
                 const conversation = await Conversation.findById(
                     data.conversationId,
@@ -51,19 +58,98 @@ function openChat(io) {
 
                 socket.to(data.conversationId).emit("response", {
                     id: data.msgId,
+                    msgId: data.msgId,
                     conversationId: data.conversationId,
                     message: data.message,
                     sender: socket.userId,
+                    type: ["offer", "order"].includes(data.type)
+                        ? data.type
+                        : "text",
+                    offerAmount: data.offerAmount,
+                    offerStatus: ["offer", "order"].includes(data.type)
+                        ? "none"
+                        : undefined,
+                    orderId: data.orderId,
+                    orderType: data.orderType,
                 });
             } catch (err) {
                 console.error("Failed to persist message", err);
-                // Notify only the sender that their message failed.
                 socket.emit("response", {
                     id: data.msgId,
+                    msgId: data.msgId,
                     conversationId: data.conversationId,
                     message: data.message,
                     sender: socket.userId,
                     status: "error",
+                });
+            }
+        });
+
+        socket.on("offer_update", async (data) => {
+            if (!data || typeof data !== "object" || typeof data.conversationId !== "string") return;
+            try {
+                const conversation = await Conversation.findById(
+                    data.conversationId,
+                );
+                if (!isParticipant(conversation, socket.userId)) {
+                    throw new Error("Not a participant");
+                }
+
+                const message = await updateOfferStatus({
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    status: data.status,
+                    userId: socket.userId,
+                });
+
+                io.to(data.conversationId).emit("offerUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    offerStatus: message.offerStatus,
+                    offerAmount: message.offerAmount,
+                });
+            } catch (err) {
+                console.error("Failed to update offer", err);
+                socket.emit("offerUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    status: "error",
+                    error: err.message,
+                });
+            }
+        });
+
+        socket.on("order_update", async (data) => {
+            if (!data || typeof data !== "object" || typeof data.conversationId !== "string") return;
+            try {
+                const conversation = await Conversation.findById(
+                    data.conversationId,
+                );
+                if (!isParticipant(conversation, socket.userId)) {
+                    throw new Error("Not a participant");
+                }
+
+                const { message, order } = await updateOrderStatus({
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    status: data.status,
+                    userId: socket.userId,
+                });
+
+                io.to(data.conversationId).emit("orderUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    offerStatus: message.offerStatus,
+                    orderId: order._id,
+                    orderType: order.orderType,
+                });
+            } catch (err) {
+                console.error("Failed to update order request", err);
+                socket.emit("orderUpdate", {
+                    msgId: data.msgId,
+                    conversationId: data.conversationId,
+                    status: "error",
+                    error: err.message,
                 });
             }
         });

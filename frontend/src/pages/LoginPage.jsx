@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import api from "../api/api";
 
 function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const queryClient = useQueryClient();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -29,9 +30,9 @@ function LoginPage() {
             // so it refetches the profile fresh instead of a stale disabled state.
             await queryClient.invalidateQueries({ queryKey: ["user"] });
 
-            navigate("/feed");
+            navigate(location.state?.from?.pathname || "/feed", { replace: true });
         } catch (err) {
-            setError("Could not reach the server.");
+            setError(err.response?.data?.message || "Could not reach the server.");
             console.error(err);
         } finally {
             setLoading(false);

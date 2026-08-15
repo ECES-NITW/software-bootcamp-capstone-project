@@ -7,6 +7,7 @@ const cloudinary = require("../config/cloudinary");
 const register = async (req, res) => {
   try {
     const { userName, email, phoneNumber, password } = req.body;
+    console.log(req.body);
     if (!userName || !email || !password || !phoneNumber) {
       return res.status(400).json({
         success: false,
@@ -19,11 +20,16 @@ const register = async (req, res) => {
         message: "Only NIT Warangal email addresses are allowed.",
       });
     }
-    const existingUser = await User.findOne({ email, phoneNumber });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phoneNumber }],
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message:
+          existingUser.email === email
+            ? "An account with this email already exists"
+            : "An account with this phone number already exists",
       });
     }
     const hashedPassword = await bcrypt.hash(password, 10);

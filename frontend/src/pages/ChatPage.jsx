@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useConversations, useProductConversation } from "../hooks/useChat";
 import Chat from "../components/Chat";
 import { useQueryClient } from "@tanstack/react-query";
 
 function ChatPage() {
     const location = useLocation();
+    const navigate = useNavigate();
     const productId = location.state?.productId;
+    const orderRequest = location.state?.orderRequest;
     const { data: stateConversation } = useProductConversation(productId);
 
     const { data: conversationsData, isLoading, isError } = useConversations();
@@ -32,7 +34,12 @@ function ChatPage() {
     const getContactInfo = (conv) =>
         conv.role === "buyer" ? conv.seller : conv.buyer;
 
-    const shown = conversations?.filter((c) => c.role === view) ?? [];
+    const shown =
+        conversations?.filter(
+            (c) =>
+                c.role === view &&
+                (c.lastMessage || c._id === selectedConvId),
+        ) ?? [];
     const activeConv = conversations?.find((c) => c._id === selectedConvId);
     const activeOther = activeConv && getContactInfo(activeConv);
     const activeProduct = activeConv?.product;
@@ -55,7 +62,9 @@ function ChatPage() {
                 </p>
             </div>
 
-            <div className="chatContainer">
+            <div
+                className={`chatContainer ${selectedConvId && activeConv ? "mobile-chat-open" : ""}`}
+            >
                 <div className="chatSidebar">
                     <div className="chatListHeader">Conversations</div>
 
@@ -178,7 +187,27 @@ function ChatPage() {
                 <div className="chatMain">
                     {selectedConvId && activeConv ? (
                         <>
-                            <div className="chatHeader">
+                            <div
+                                className="chatHeader"
+                                onClick={() => {
+                                    const pid = activeProduct?._id ?? activeConv?.productId;
+                                    if (pid) navigate(`/item/${pid}`);
+                                }}
+                                style={{ cursor: activeProduct ? "pointer" : "default" }}
+                                title={activeProduct ? "View product details" : undefined}
+                            >
+                                <button
+                                    type="button"
+                                    className="chatBackBtn"
+                                    title="Back to conversations"
+                                    aria-label="Back to conversations"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedConvId(null);
+                                    }}
+                                >
+                                    &#8592;
+                                </button>
                                 {activeOther?.profilePic ? (
                                     <img
                                         src={activeOther.profilePic}
@@ -216,6 +245,14 @@ function ChatPage() {
                                         </span>
                                     )}
                                 </div>
+                                {activeConv?.currentOffer != null && (
+                                    <span
+                                        className="chatOfferChip"
+                                        title="Agreed price"
+                                    >
+                                        Agreed ₹{activeConv.currentOffer}
+                                    </span>
+                                )}
                                 {activeProduct?.images?.[0]?.url && (
                                     <img
                                         src={activeProduct.images[0].url}
@@ -229,7 +266,16 @@ function ChatPage() {
                                     />
                                 )}
                             </div>
-                            <Chat conversationId={selectedConvId} />
+                            <Chat
+                                conversationId={selectedConvId}
+                                product={activeProduct}
+                                role={activeConv?.role}
+                                pendingRequest={
+                                    activeProduct?._id === productId
+                                        ? orderRequest
+                                        : undefined
+                                }
+                            />
                         </>
                     ) : (
                         <div

@@ -1,42 +1,63 @@
+const fs = require("fs");
 const Product = require("../models/Product");
 const cloudinary = require("../config/cloudinary");
 
+const toNumber = (value) =>
+  value === undefined || value === null || value === ""
+    ? undefined
+    : Number(value);
+const toArray = (value) => [].concat(value ?? []);
+
 const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category, condition, location, status } =
-      req.body;
+    const {
+      title,
+      description,
+      price,
+      rentPrice,
+      deposit,
+      exchangePreferences,
+      budget,
+      category,
+      condition,
+      location,
+    } = req.body;
 
-    // Check if at least one image is uploaded
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload at least one product image.",
-      });
-    }
+    const types = toArray(req.body.types);
 
     // Upload images to Cloudinary
     const imageData = [];
 
-    for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: "campus-marketplace/products",
-      });
+    for (const file of req.files ?? []) {
+      try {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "campus-marketplace/products",
+        });
 
-      imageData.push({
-        url: result.secure_url,
-        public_id: result.public_id,
-      });
+        imageData.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+        });
+      } finally {
+        fs.unlink(file.path, () => {});
+      }
     }
 
     // Create Product
     const product = await Product.create({
       title,
       description,
-      price,
+      types,
+      price: types.includes("sell") ? toNumber(price) : undefined,
+      rentPrice: types.includes("rent") ? toNumber(rentPrice) : undefined,
+      deposit: types.includes("rent") ? toNumber(deposit) : undefined,
+      exchangePreferences: types.includes("exchange")
+        ? exchangePreferences
+        : undefined,
+      budget: types.includes("looking-for") ? toNumber(budget) : undefined,
       category,
       condition,
       location,
-      status,
       images: imageData,
       seller: req.user.id,
     });
@@ -44,7 +65,7 @@ const createProduct = async (req, res) => {
     // Populate seller details
     const populatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     return res.status(201).json({
@@ -78,11 +99,27 @@ const getProducts = async (req, res) => {
       sort = "newest",
     } = req.query;
 
-    const filter = {};
-
+    // Only show products that are currently available
+    const filter = {
+      status: "Available",
+    };
+    // Filter products by seller
+    if (req.query.seller) {
+      filter.seller = req.query.seller;
+    }
     // Search
     if (search) {
-      filter.$text = { $search: search };
+      const pattern = String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.$or = [
+        { title: { $regex: pattern, $options: "i" } },
+        { description: { $regex: pattern, $options: "i" } },
+      ];
+    }
+
+    const requestedTypes = toArray(req.query.types);
+
+    if (requestedTypes.length > 0) {
+      filter.types = { $in: requestedTypes };
     }
 
     // Category Filter
@@ -113,10 +150,12 @@ const getProducts = async (req, res) => {
 
     switch (sort) {
       case "price":
+      case "price-low":
         sortOption = { price: 1 };
         break;
 
       case "-price":
+      case "price-high":
         sortOption = { price: -1 };
         break;
 
@@ -125,20 +164,21 @@ const getProducts = async (req, res) => {
         break;
 
       case "newest":
+      case "recent":
       default:
         sortOption = { createdAt: -1 };
         break;
     }
 
-    const currentPage = Number(page);
-    const pageLimit = Number(limit);
+    const currentPage = Math.max(1, Math.floor(Number(page)) || 1);
+    const pageLimit = Math.min(200, Math.max(1, Math.floor(Number(limit)) || 10));
 
     const skip = (currentPage - 1) * pageLimit;
 
     const totalProducts = await Product.countDocuments(filter);
 
     const products = await Product.find(filter)
-      .populate("seller", "name email")
+      .populate("seller", "userName email")
       .sort(sortOption)
       .skip(skip)
       .limit(pageLimit);
@@ -172,16 +212,49 @@ const getProducts = async (req, res) => {
   }
 };
 
-
 // Get My Products
 
+// const getMyProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find({
+//       seller: req.user.id,
+//     })
+//       .populate("seller", "name email")
+//       .sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       success: true,
+//       totalProducts: products.length,
+//       products,
+//     });
+//   } catch (error) {
+//     console.error("Get My Products Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch your products.",
+//       error: error.message,
+//     });
+//   }
+// };
 const getMyProducts = async (req, res) => {
   try {
+    console.log("LOGGED IN USER ID:", req.user.id);
+
     const products = await Product.find({
       seller: req.user.id,
     })
-      .populate("seller", "name email")
+      .populate("seller", "userName email")
       .sort({ createdAt: -1 });
+
+    console.log(
+      "MY PRODUCTS:",
+      products.map((p) => ({
+        id: p._id,
+        title: p.title,
+        seller: p.seller?._id,
+      })),
+    );
 
     return res.status(200).json({
       success: true,
@@ -198,14 +271,13 @@ const getMyProducts = async (req, res) => {
     });
   }
 };
-
 // Get Product By ID
 
 const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     if (!product) {
@@ -250,42 +322,77 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // If new images are uploaded then delete old images and upload new images
+    // If new images are uploaded then upload new images and delete old images
     if (req.files && req.files.length > 0) {
-      for (const image of product.images) {
-        await cloudinary.uploader.destroy(image.public_id);
-      }
-
       const imageData = [];
 
       for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "campus-marketplace/products",
-        });
+        try {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "campus-marketplace/products",
+          });
 
-        imageData.push({
-          url: result.secure_url,
-          public_id: result.public_id,
-        });
+          imageData.push({
+            url: result.secure_url,
+            public_id: result.public_id,
+          });
+        } finally {
+          fs.unlink(file.path, () => {});
+        }
       }
 
+      const oldImages = product.images;
       product.images = imageData;
+
+      for (const image of oldImages) {
+        try {
+          await cloudinary.uploader.destroy(image.public_id);
+        } catch (err) {
+          console.error("Failed to delete old image", image.public_id, err);
+        }
+      }
+    }
+
+    if (req.body.types !== undefined) {
+      product.types = toArray(req.body.types);
     }
 
     // Update fields
     product.title = req.body.title || product.title;
     product.description = req.body.description || product.description;
-    product.price = req.body.price || product.price;
     product.category = req.body.category || product.category;
     product.condition = req.body.condition || product.condition;
     product.location = req.body.location || product.location;
-    product.status = req.body.status || product.status;
+
+    const typeFields = [
+      { field: "price", type: "sell", value: toNumber(req.body.price) },
+      { field: "rentPrice", type: "rent", value: toNumber(req.body.rentPrice) },
+      { field: "deposit", type: "rent", value: toNumber(req.body.deposit) },
+      {
+        field: "exchangePreferences",
+        type: "exchange",
+        value: req.body.exchangePreferences,
+      },
+      {
+        field: "budget",
+        type: "looking-for",
+        value: toNumber(req.body.budget),
+      },
+    ];
+
+    for (const { field, type, value } of typeFields) {
+      if (!product.types.includes(type)) {
+        product[field] = undefined;
+      } else if (value !== undefined) {
+        product[field] = value;
+      }
+    }
 
     await product.save();
 
     const updatedProduct = await Product.findById(product._id).populate(
       "seller",
-      "name email",
+      "userName email",
     );
 
     return res.status(200).json({

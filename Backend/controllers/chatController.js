@@ -1,6 +1,13 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const Product = require("../models/Product");
+const Order = require("../models/Order");
+
+const REQUEST_LABELS = {
+  buy: "Purchase request",
+  rent: "Rental request",
+  exchange: "Swap request",
+};
 
 const getProductConversation = async (req, res) => {
   try {
@@ -93,16 +100,180 @@ const getMessages = async (req, res) => {
 
 const addMessage = async (messageData) => {
   const conversationId = messageData.conversationId;
+  const type = ["offer", "order"].includes(messageData.type)
+    ? messageData.type
+    : "text";
+
+  if (type === "order") {
+    const orderType = messageData.orderType;
+    if (!REQUEST_LABELS[orderType]) {
+      throw new Error("Invalid order type");
+    }
+    if (!messageData.orderId) {
+      throw new Error("orderId is required for order requests");
+    }
+
+    const label = REQUEST_LABELS[orderType];
+    await Message.create({
+      msgId: messageData.msgId,
+      conversationId,
+      sender: messageData.sender,
+      type,
+      message: messageData.message || label,
+      orderId: messageData.orderId,
+      orderType,
+      offerAmount: Number(messageData.offerAmount) || 0,
+      offerStatus: "none",
+    });
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: label,
+    });
+    return;
+  }
+
+  if (type === "offer") {
+    const amount = Number(messageData.offerAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error("Invalid offer amount");
+    }
+
+    await Message.create({
+      msgId: messageData.msgId,
+      conversationId,
+      sender: messageData.sender,
+      type,
+      message: messageData.message || "",
+      offerAmount: amount,
+      offerStatus: "none",
+    });
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: `Offered ₹${amount}`,
+    });
+    return;
+  }
+
   const message = messageData.message;
   await Message.create({
     msgId: messageData.msgId,
     conversationId,
     sender: messageData.sender,
+    type,
     message,
   });
   await Conversation.findByIdAndUpdate(conversationId, {
     lastMessage: message,
   });
+};
+
+const updateOfferStatus = async ({ msgId, conversationId, status, userId }) => {
+  if (!["accepted", "declined"].includes(status)) {
+    throw new Error("Invalid offer status");
+  }
+
+  const message = await Message.findOne({ msgId, conversationId });
+  if (!message || message.type !== "offer") {
+    throw new Error("Offer not found");
+  }
+  if (String(message.sender) === String(userId)) {
+    throw new Error("You cannot respond to your own offer");
+  }
+  if (message.offerStatus !== "none") {
+    throw new Error("Offer has already been resolved");
+  }
+
+  message.offerStatus = status;
+  await message.save();
+
+  const conversationUpdate = {
+    lastMessage:
+      status === "accepted"
+        ? `Offer of ₹${message.offerAmount} accepted`
+        : `Offer of ₹${message.offerAmount} declined`,
+  };
+  // The agreed price only changes when an offer is accepted
+  if (status === "accepted") {
+    conversationUpdate.currentOffer = message.offerAmount;
+  }
+  await Conversation.findByIdAndUpdate(
+    message.conversationId,
+    conversationUpdate,
+  );
+
+  return message;
+};
+
+const updateOrderStatus = async ({ msgId, conversationId, status, userId }) => {
+  if (!["accepted", "declined"].includes(status)) {
+    throw new Error("Invalid request status");
+  }
+
+  const message = await Message.findOne({ msgId, conversationId });
+  if (!message || message.type !== "order") {
+    throw new Error("Request not found");
+  }
+  if (message.offerStatus !== "none") {
+    throw new Error("Request has already been resolved");
+  }
+
+  const order = await Order.findById(message.orderId);
+  if (!order) {
+    throw new Error("Order not found");
+  }
+  if (String(order.seller) !== String(userId)) {
+    throw new Error("Only the seller can respond to this request");
+  }
+  if (order.status !== "pending") {
+    throw new Error("Order is no longer pending");
+  }
+
+  if (status === "accepted") {
+    const product = await Product.findById(order.product);
+    if (!product || product.status !== "Available") {
+      throw new Error("Product is no longer available");
+    }
+    order.status = "accepted";
+    await Product.findByIdAndUpdate(order.product, {
+      status: order.orderType === "rent" ? "Reserved" : "Sold",
+    });
+  } else {
+    order.status = "rejected";
+  }
+
+  message.offerStatus = status;
+  await message.save();
+  await order.save();
+
+  const label = REQUEST_LABELS[order.orderType] || "Request";
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: `${label} ${status}`,
+  });
+
+  return { message, order };
+};
+
+const getAgreedPrice = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const productId = req.params.productId;
+
+    const conversation = await Conversation.findOne({
+      productId,
+      $or: [{ buyerId: userId }, { sellerId: userId }],
+      currentOffer: { $ne: null },
+    })
+      .sort({ updatedAt: -1 })
+      .select("currentOffer");
+
+    return res.status(200).json({
+      success: true,
+      agreedPrice: conversation?.currentOffer ?? null,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 const getConversations = async (req, res) => {
@@ -150,5 +321,8 @@ module.exports = {
   getProductConversation,
   getMessages,
   addMessage,
+  updateOfferStatus,
+  updateOrderStatus,
+  getAgreedPrice,
   getConversations,
 };

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
+const Conversation = require("../models/Conversation");
 
 const createOrder = async (req, res) => {
   try {
@@ -13,7 +14,18 @@ const createOrder = async (req, res) => {
       rentalEndDate,
       swapProduct,
     } = req.body;
+
+    if (!["buy", "rent", "exchange"].includes(orderType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Order type must be one of buy, rent or exchange.",
+      });
+    }
+
+    const requiredListingType = orderType === "buy" ? "sell" : orderType;
+
     const product = await Product.findById(productId);
+    console.log("PRODUCT STATUS:", product.status);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -34,17 +46,57 @@ const createOrder = async (req, res) => {
       });
     }
 
+    if (!product.types.includes(requiredListingType)) {
+      return res.status(400).json({
+        success: false,
+        message: `This listing is not available for ${requiredListingType}. It is listed for: ${product.types.join(", ")}.`,
+      });
+    }
+
+    const existingRequest = await Order.findOne({
+      buyer,
+      product: productId,
+      orderType,
+      status: "pending",
+    });
+    if (existingRequest) {
+      return res.status(409).json({
+        success: false,
+        message: "You already have a pending request for this product",
+        order: existingRequest,
+      });
+    }
+
+    const conversation =
+      orderType === "buy"
+        ? await Conversation.findOne({
+            productId: product._id,
+            buyerId: buyer,
+            sellerId: product.seller,
+            currentOffer: { $ne: null },
+          })
+            .sort({ updatedAt: -1 })
+            .select("currentOffer")
+        : null;
+
+    const amountByOrderType = {
+      buy: conversation?.currentOffer ?? product.price,
+      rent: product.rentPrice,
+      exchange: 0,
+    };
+
     const order = new Order({
       buyer,
       seller: product.seller,
       product: product._id,
       orderType,
-      totalAmount: product.price,
+      totalAmount: amountByOrderType[orderType] ?? 0,
+      agreedPrice: orderType === "buy" ? conversation?.currentOffer : undefined,
 
       rentalStartDate: orderType === "rent" ? rentalStartDate : undefined,
       rentalEndDate: orderType === "rent" ? rentalEndDate : undefined,
 
-      swapProduct: orderType === "swap" ? swapProduct : undefined,
+      swapProduct: orderType === "exchange" ? swapProduct : undefined,
     });
 
     await order.save();
@@ -67,6 +119,7 @@ const getAllMyOrders = async (req, res) => {
     const orders = await Order.find({ buyer })
       .populate("product")
       .populate("seller", "userName email")
+      .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -141,6 +194,7 @@ const getReceivedOrders = async (req, res) => {
     const orders = await Order.find({ seller })
       .populate("buyer", "userName email profilePic")
       .populate("product")
+      .populate("swapProduct", "title")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -176,11 +230,15 @@ const rejectOrder = async (req, res) => {
       });
     }
 
+    if (order.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending orders can be rejected",
+      });
+    }
+
     order.status = "rejected";
     await order.save();
-    await Product.findByIdAndUpdate(order.product, {
-      status: "Available",
-    });
     return res.status(200).json({
       success: true,
       message: "Order rejected successfully",
@@ -224,9 +282,6 @@ const cancelOrder = async (req, res) => {
 
     order.status = "cancelled";
     await order.save();
-    await Product.findByIdAndUpdate(order.product, {
-      status: "Available",
-    });
     return res.status(200).json({
       success: true,
       message: "Order cancelled successfully",

@@ -451,6 +451,136 @@ h1, h2, h3, .navLogo {
   border-radius: 12px;
 }
 
+.typeToggleRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.typeToggle {
+  flex: 1;
+  min-width: 110px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-input);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.typeToggle:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+}
+
+.typeToggle.active {
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.typeToggle.toggle-sell.active {
+  border-color: rgba(46, 139, 87, 0.4);
+  color: var(--accent-buy);
+}
+
+.typeToggle.toggle-rent.active {
+  border-color: #b3d7ff;
+  color: var(--accent-rent);
+}
+
+.typeToggle.toggle-exchange.active {
+  border-color: #f2e3c9;
+  color: var(--accent-swap);
+}
+
+.typePanel {
+  border: 1.5px solid var(--border-color);
+  border-radius: 16px;
+  padding: 18px;
+  background: var(--bg-input);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fadeInUp 0.25s ease-out;
+}
+
+.typePanelTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.typePanel.panel-sell {
+  border-color: rgba(46, 139, 87, 0.45);
+  box-shadow: 0 0 0 1px rgba(46, 139, 87, 0.12);
+}
+
+.typePanel.panel-sell .typePanelTitle {
+  color: var(--accent-buy);
+}
+
+.typePanel.panel-rent {
+  border-color: rgba(70, 130, 180, 0.45);
+  box-shadow: 0 0 0 1px rgba(70, 130, 180, 0.12);
+}
+
+.typePanel.panel-rent .typePanelTitle {
+  color: var(--accent-rent);
+}
+
+.typePanel.panel-exchange {
+  border-color: rgba(200, 122, 83, 0.5);
+  box-shadow: 0 0 0 1px rgba(200, 122, 83, 0.12);
+}
+
+.typePanel.panel-exchange .typePanelTitle {
+  color: var(--accent-swap);
+}
+
+.imagePreviewGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.imagePreview {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-color);
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePreviewRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(35, 45, 36, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* Organic Product Card */
 .productCard {
   background: var(--bg-card);
@@ -572,6 +702,43 @@ h1, h2, h3, .navLogo {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+.listingTypeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.listingTypeTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+}
+
+.listingTypeTag.tag-sell {
+  background: rgba(46, 139, 87, 0.08);
+  border-color: rgba(46, 139, 87, 0.25);
+  color: var(--accent-buy);
+}
+
+.listingTypeTag.tag-rent {
+  background: #e6f3ff;
+  border-color: #b3d7ff;
+  color: var(--accent-rent);
+}
+
+.listingTypeTag.tag-exchange {
+  background: #fdf5e6;
+  border-color: #f2e3c9;
+  color: var(--accent-swap);
 }
 
 /* Browse Feed layout */
@@ -790,6 +957,25 @@ h1, h2, h3, .navLogo {
   gap: 6px;
 }
 
+.detailPriceRows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.detailPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.detailPriceRow + .detailPriceRow {
+  border-top: 1.5px solid var(--border-color);
+  padding-top: 14px;
+}
+
 .detailPriceLabel {
   font-family: 'Outfit', sans-serif;
   font-size: 0.75rem;
@@ -981,6 +1167,68 @@ h1, h2, h3, .navLogo {
   background: var(--bg-card);
 }
 
+/* Back-to-conversations button, only visible on mobile */
+.chatBackBtn {
+  display: none;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--primary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Messages page: stack list/chat as single panes on small screens */
+@media (max-width: 900px) {
+  .chatContainer {
+    height: calc(100dvh - 220px);
+    min-height: 420px;
+  }
+
+  .chatSidebar {
+    width: 100%;
+    border-right: none;
+  }
+
+  /* Show either the conversation list or the open chat, not both */
+  .chatContainer.mobile-chat-open .chatSidebar {
+    display: none;
+  }
+  .chatContainer:not(.mobile-chat-open) .chatMain {
+    display: none;
+  }
+
+  .chatBackBtn {
+    display: inline-flex;
+  }
+
+  .chatHeader {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+  }
+
+  .chatBubble,
+  .offerBubble {
+    max-width: 85%;
+  }
+
+  .chatMessages {
+    padding: 16px;
+  }
+
+  .chatInputArea,
+  .offerComposer,
+  .chatOptionsMenu {
+    padding: 12px 14px;
+  }
+}
+
 .chatMessages {
   flex: 1;
   padding: 24px;
@@ -1023,6 +1271,196 @@ h1, h2, h3, .navLogo {
   display: flex;
   gap: 12px;
   background: var(--bg-card);
+}
+
+/* ---- Offer / negotiation bubbles ---- */
+.offerBubble {
+  max-width: 60%;
+  min-width: 220px;
+  border-radius: 20px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.offer-received {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border: 1.5px solid var(--secondary);
+  border-bottom-left-radius: 4px;
+}
+
+.offer-sent {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(65, 90, 66, 0.06), rgba(181, 141, 99, 0.08));
+  border: 1.5px solid var(--primary);
+  border-bottom-right-radius: 4px;
+}
+
+.offerLabel {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--secondary);
+}
+
+.offerAmount {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.offerActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.offerBtn {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.offerBtn-accept {
+  background: rgba(46, 139, 87, 0.1);
+  border: 1.5px solid #2e8b57;
+  color: #2e8b57;
+}
+.offerBtn-accept:hover {
+  background: #2e8b57;
+  color: #ffffff;
+}
+
+.offerBtn-decline {
+  background: rgba(220, 38, 38, 0.06);
+  border: 1.5px solid #dc2626;
+  color: #dc2626;
+}
+.offerBtn-decline:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.offerStatusBar {
+  margin-top: 4px;
+  padding: 8px 14px;
+  border-radius: 50px;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.offer-pending {
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1.5px dashed var(--border-color);
+}
+
+.offer-accepted {
+  background: rgba(46, 139, 87, 0.12);
+  color: #2e8b57;
+  border: 1.5px solid rgba(46, 139, 87, 0.4);
+}
+
+.offer-declined {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border: 1.5px solid rgba(220, 38, 38, 0.35);
+}
+
+/* Offer composer above the input bar */
+.offerComposer {
+  padding: 16px 24px;
+  border-top: 1.5px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(181, 141, 99, 0.05), rgba(65, 90, 66, 0.04));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.offerComposerTitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--secondary);
+}
+
+.offerComposerRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* "+" options button and its popover menu */
+.chatPlusBtn {
+  width: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--primary);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.chatPlusBtn:hover {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+}
+
+.chatOptionsMenu {
+  padding: 8px 24px;
+  border-top: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  gap: 8px;
+}
+
+.chatOptionItem {
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 50px;
+  padding: 8px 18px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.chatOptionItem:hover {
+  border-color: var(--secondary);
+  background: var(--secondary-glow);
+}
+
+/* Agreed-price chip in the chat header */
+.chatOfferChip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 50px;
+  background: rgba(46, 139, 87, 0.1);
+  border: 1.5px solid rgba(46, 139, 87, 0.4);
+  color: #2e8b57;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Small chat button on a feed ItemCard */
@@ -1348,4 +1786,14 @@ h1, h2, h3, .navLogo {
 .auth-switch a:hover {
   color: var(--primary-hover);
   text-decoration: underline;
+}
+
+.routeState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
 }
