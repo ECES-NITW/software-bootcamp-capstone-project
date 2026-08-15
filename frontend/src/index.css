@@ -1797,3 +1797,59 @@ h1, h2, h3, .navLogo {
   padding: 64px 24px;
   text-align: center;
 }
+
+/* Mobile app shell */
+.navMenuBtn {
+  display: none;
+  background: transparent;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.sidebarBackdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .navMenuBtn {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    height: auto;
+    background: var(--bg-primary);
+    z-index: 90;
+    padding: 24px 16px;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg);
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebarBackdrop {
+    display: block;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(35, 45, 36, 0.35);
+    z-index: 80;
+  }
+}

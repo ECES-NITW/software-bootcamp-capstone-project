@@ -45,6 +45,7 @@ const MessageTime = ({ value }) => {
 };
 
 const Chat = ({ conversationId, product, role, pendingRequest }) => {
+    const productAvailable = product?.status === "Available";
     const queryClient = useQueryClient();
     const { data: user } = useUser();
     const { data: messages = [], isLoading } = useMessages(conversationId);
@@ -358,7 +359,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                 </div>
                 <div className="offerAmount">₹{msg.offerAmount}</div>
 
-                {status === "none" && !isMe && (
+                {status === "none" && !isMe && productAvailable && (
                     <div className="offerActions">
                         <button
                             type="button"
@@ -426,7 +427,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                         : `₹${msg.offerAmount}`}
                 </div>
 
-                {status === "none" && !isMe && (
+                {status === "none" && !isMe && productAvailable && (
                     <div className="offerActions">
                         <button
                             type="button"
@@ -518,7 +519,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
                 <div ref={bottomRef} />
             </div>
 
-            {optionCard === "offer" && (
+            {optionCard === "offer" && productAvailable && (
                 <div className="offerComposer">
                     <div className="offerComposerTitle">
                         Negotiate with a new price
@@ -563,7 +564,7 @@ const Chat = ({ conversationId, product, role, pendingRequest }) => {
 
             {showOptions && optionCard !== "offer" && (
                 <div className="chatOptionsMenu">
-                    {product?.types?.includes("sell") && (
+                    {product?.types?.includes("sell") && productAvailable && (
                         <button
                             type="button"
                             className="chatOptionItem"

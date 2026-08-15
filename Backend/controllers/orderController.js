@@ -337,15 +337,23 @@ const completeOrder = async (req, res) => {
       });
     }
 
-    if (order.status !== "accepted") {
+    if (!["pending", "accepted"].includes(order.status)) {
       return res.status(400).json({
         success: false,
-        message: "Only accepted orders can be completed",
+        message: "Only pending or accepted orders can be completed",
       });
     }
 
+    const wasPending = order.status === "pending";
     order.status = "completed";
+    order.paymentStatus = "paid";
     await order.save();
+
+    if (wasPending) {
+      await rejectCompetingOrders(order);
+    }
+    await syncOrderRequestMessage(order, "accepted");
+
     const productStatus = order.orderType === "rent" ? "Available" : "Sold";
 
     await Product.findByIdAndUpdate(order.product, {

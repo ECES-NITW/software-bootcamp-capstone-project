@@ -24,10 +24,19 @@ const createRazorpayOrder = async (req, res) => {
         message: "Only the buyer can make the payment",
       });
     }
-    if (order.orderType !== "buy" && order.status !== "accepted") {
+    if (order.orderType !== "buy") {
       return res.status(400).json({
         success: false,
-        message: "Order must be accepted before payment",
+        message: "Payments only apply to purchase orders",
+      });
+    }
+    if (order.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message:
+          order.status === "completed"
+            ? "This order is already fully sold"
+            : "Order must be accepted before payment",
       });
     }
 

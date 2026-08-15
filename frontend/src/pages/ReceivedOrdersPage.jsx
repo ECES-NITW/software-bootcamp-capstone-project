@@ -26,7 +26,8 @@ const orderAmount = (order) => {
 function ReceivedOrdersPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: orders = [], isLoading, isError } = useReceivedOrders();
+  const { data: allOrders = [], isLoading, isError } = useReceivedOrders();
+  const orders = allOrders.filter((order) => order.status !== "completed");
   const [feedback, setFeedback] = useState("");
 
   const respondMutation = useMutation({
@@ -300,6 +301,23 @@ function ReceivedOrdersPage() {
                         Reject
                       </button>
                     </div>
+                  )}
+
+                  {["pending", "accepted"].includes(order.status) && (
+                    <button
+                      className="btn"
+                      onClick={() => respond(order._id, "complete")}
+                      disabled={isBusy}
+                      style={{
+                        padding: "10px 20px",
+                        background: "var(--bg-secondary)",
+                        border: "1.5px solid var(--primary)",
+                        color: "var(--primary)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isBusy ? "Working..." : "Mark as Sold"}
+                    </button>
                   )}
                 </div>
               </div>

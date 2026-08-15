@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
@@ -13,6 +14,8 @@ function RootLayout() {
     // Till then this is fine
 
     const location = useLocation();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     if (location.pathname === "/") {
         //If its home page , no sidebar
         return (
@@ -29,9 +32,18 @@ function RootLayout() {
 
     return (
         <div className="appShell">
-            <Navbar />
+            <Navbar onMenuClick={() => setSidebarOpen((open) => !open)} />
             <div className="appBody">
-                <Sidebar />
+                <Sidebar
+                    open={sidebarOpen}
+                    onNavigate={() => setSidebarOpen(false)}
+                />
+                {sidebarOpen && (
+                    <div
+                        className="sidebarBackdrop"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
                 <main className="appMain">
                     <Outlet />
                 </main>

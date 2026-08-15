@@ -94,7 +94,7 @@ const getProducts = async (req, res) => {
       sort = "newest",
     } = req.query;
 
-    const filter = {};
+    const filter = { status: "Available" };
 
     // Search
     if (search) {

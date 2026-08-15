@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useUserOrders, useReceivedOrders } from '../hooks/useCheckout';
-import { useUpdateProduct } from '../hooks/useProducts';
+import { usePayOrder } from '../hooks/usePayment';
 
 const ORDER_TYPE_LABELS = { buy: 'Sell', rent: 'Rent', exchange: 'Exchange' };
 
@@ -35,17 +35,15 @@ function OrdersPage() {
     isLoading: isReceivedOrdersLoading,
     isError: isReceivedOrdersError,
   } = useReceivedOrders();
-  const updateProductMutation = useUpdateProduct();
+  const payMutation = usePayOrder();
 
-  const toggleProductStatus = (e, product) => {
+  const handlePay = (e, orderId) => {
     e.stopPropagation();
-    if (!product?._id) return;
-    const formData = new FormData();
-    formData.append(
-      'status',
-      product.status === 'Available' ? 'Sold' : 'Available',
-    );
-    updateProductMutation.mutate({ id: product._id, formData });
+    payMutation.mutate(orderId, {
+      onError: (err) => {
+        alert(err.response?.data?.message || err.message || 'Payment failed');
+      },
+    });
   };
 
   if (isLoading) {
@@ -103,6 +101,14 @@ function OrdersPage() {
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                         Date: {new Date(order.createdAt).toLocaleDateString()}
                       </p>
+                      {order.orderType === 'buy' && (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          Payment:{' '}
+                          <span style={{ textTransform: 'capitalize' }}>
+                            {order.paymentStatus || 'pending'}
+                          </span>
+                        </p>
+                      )}
                       {['accepted', 'completed'].includes(order.status) &&
                         contactLine(order.seller) && (
                           <p style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>
@@ -113,6 +119,19 @@ function OrdersPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {order.orderType === 'buy' &&
+                      order.status === 'accepted' &&
+                      order.paymentStatus !== 'paid' && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={(e) => handlePay(e, order._id)}
+                          disabled={payMutation.isPending}
+                          style={{ padding: '10px 24px' }}
+                        >
+                          {payMutation.isPending ? 'Processing...' : 'Pay'}
+                        </button>
+                      )}
+
                     {rentalDays(order) && (
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>
@@ -211,20 +230,6 @@ function OrdersPage() {
                       </span>
                     </div>
 
-                    {order.product?._id && (
-                      <button
-                        className="btn"
-                        onClick={(e) => toggleProductStatus(e, order.product)}
-                        disabled={updateProductMutation.isPending}
-                        style={{ padding: '8px 16px', fontSize: '0.85rem', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', color: 'var(--primary)' }}
-                      >
-                        {updateProductMutation.isPending
-                          ? 'Updating...'
-                          : order.product.status === 'Available'
-                            ? 'Mark Sold'
-                            : 'Mark Available'}
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}

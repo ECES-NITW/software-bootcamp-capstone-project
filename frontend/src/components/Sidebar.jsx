@@ -123,13 +123,13 @@ const HeartIcon = () => (
   </svg>
 );
 
-function Sidebar() {
+function Sidebar({ open, onNavigate }) {
   const { data: user } = useUser();
   const isLoggedIn = Boolean(user);
 
   return (
-    <aside className="sidebar">
-      <nav className="sidebarNav">
+    <aside className={`sidebar ${open ? 'open' : ''}`}>
+      <nav className="sidebarNav" onClick={onNavigate}>
         <NavLink to="/">Home</NavLink>
         
         <div style={{ margin: '8px 0', borderBottom: '1px solid var(--border-color)', opacity: 0.5 }}></div>
